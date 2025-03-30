@@ -1,0 +1,67 @@
+.dropdown {
+  position: relative;
+  width: 110px;
+}
+
+.dropdownToggle {
+  width: 100%;
+  padding: 8px 12px;
+  background: #ffffff;
+  border: 1px solid #9e9e9e;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: #000000;
+  font-size: 14px;
+
+  &:hover {
+    border-color: #9e9e9e;
+  }
+}
+
+.arrow {
+  width: 16px;
+  height: 16px;
+  stroke: #000000;
+  transition: transform 0.2s ease;
+}
+
+.open .arrow {
+  transform: rotate(180deg);
+}
+
+.dropdownMenu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: #ffffff;
+  border: 1px solid #9e9e9e;
+  border-radius: 4px;
+  margin-top: 4px;
+  padding: 4px 0;
+  list-style: none;
+  z-index: 5;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.dropdownItem {
+  padding: 8px 12px;
+  color: #000000;
+  font-size: 14px;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+
+  &:hover {
+    background-color: #0f8fee;
+    color: #ffffff;
+  }
+}
+
+.dropdownItem:hover .checkmark {
+  color: white;
+}
