@@ -1,8 +1,8 @@
 import { useParams } from "react-router-dom";
-import { Dropdown } from "../components/index";
+import { Dropdown } from "../../components/index";
 import { useState } from "react";
-import { EditorTheme, Language } from "../types/shared.types";
-import CodeEditor from "../components/CodeEditor/CodeEditor";
+import { EditorTheme, Language } from "../../types/shared.types";
+import CodeEditor from "../../components/CodeEditor/CodeEditor";
 import styles from "./RoomPage.module.scss";
 
 export default function RoomPage() {
