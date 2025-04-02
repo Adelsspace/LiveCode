@@ -1,22 +1,44 @@
-import React, { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import styles from "./Dropdown.module.scss";
 
-interface DropdownProps {
-  options: string[];
-  defaultValue?: string;
+interface DropdownProps<T> {
+  options: T[];
+  defaultValue?: T;
+  onSelect: (option: T) => void;
 }
 
-export const Dropdown: React.FC<DropdownProps> = ({
+export const Dropdown = <T extends string | number>({
   options,
   defaultValue,
-}) => {
+  onSelect,
+}: DropdownProps<T>) => {
   const [isOpen, setIsOpen] = useState<boolean>(false);
-  const [selectedOption, setSelectedOption] = useState<string>(
+  const [selectedOption, setSelectedOption] = useState<T | undefined>(
     defaultValue || options[0]
   );
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const handleClickOutside = (event: MouseEvent) => {
+    const target = event.target as Node;
+    if (dropdownRef.current && !dropdownRef.current.contains(target)) {
+      setIsOpen(false);
+    }
+  };
+  useEffect(() => {
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
+  const handleSelect = (option: T) => {
+    setSelectedOption(option);
+    setIsOpen(false);
+    onSelect(option);
+  };
 
   return (
-    <div className={styles.dropdown}>
+    <div className={styles.dropdown} ref={dropdownRef}>
       <button
         className={`${styles.dropdownToggle} ${isOpen ? styles.open : ""}`}
         onClick={() => setIsOpen(!isOpen)}
@@ -44,10 +66,7 @@ export const Dropdown: React.FC<DropdownProps> = ({
             <li
               key={option}
               className={styles.dropdownItem}
-              onClick={() => {
-                setSelectedOption(option);
-                setIsOpen(false);
-              }}
+              onClick={() => handleSelect(option)}
             >
               {option}
               {option === selectedOption && (
