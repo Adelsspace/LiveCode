@@ -1,4 +1,4 @@
-package ru.hh.blokshnote.dto.requests;
+package ru.hh.blokshnote.dto.room.request;
 
 public class CreateRoomRequest {
   private String username;

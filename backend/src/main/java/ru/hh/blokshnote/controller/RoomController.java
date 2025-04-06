@@ -3,11 +3,13 @@ package ru.hh.blokshnote.controller;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import ru.hh.blokshnote.dto.requests.CreateRoomRequest;
-import ru.hh.blokshnote.dto.requests.CreateUserRequest;
-import ru.hh.blokshnote.dto.responses.RoomAdminDto;
-import ru.hh.blokshnote.dto.responses.RoomDto;
-import ru.hh.blokshnote.dto.responses.UserDto;
+import ru.hh.blokshnote.dto.room.error.RoomError;
+import ru.hh.blokshnote.dto.room.request.CreateRoomRequest;
+import ru.hh.blokshnote.dto.user.error.UserError;
+import ru.hh.blokshnote.dto.user.request.CreateUserRequest;
+import ru.hh.blokshnote.dto.room.response.RoomWithAdminDto;
+import ru.hh.blokshnote.dto.room.response.RoomDto;
+import ru.hh.blokshnote.dto.user.response.UserDto;
 import ru.hh.blokshnote.entity.Room;
 import ru.hh.blokshnote.entity.User;
 import ru.hh.blokshnote.service.RoomService;
@@ -25,22 +27,23 @@ public class RoomController {
   }
 
   @PostMapping
-  public ResponseEntity<RoomAdminDto> createRoom(@RequestBody CreateRoomRequest request) {
+  public ResponseEntity<RoomWithAdminDto> createRoom(@RequestBody CreateRoomRequest request) {
     Room createdRoom = roomService.createRoomWithAdmin(request);
-    return ResponseEntity.ok(new RoomAdminDto(createdRoom.getRoomUuid(), createdRoom.getAdminToken()));
+    return ResponseEntity.ok(new RoomWithAdminDto(createdRoom.getRoomUuid(), createdRoom.getAdminToken()));
   }
 
   @GetMapping("/{uuid}")
-  public ResponseEntity<RoomDto> getRoom(@PathVariable("uuid") UUID roomUuid) {
+  public ResponseEntity<?> getRoom(@PathVariable("uuid") UUID roomUuid) {
     Room room = roomService.getRoomByUuid(roomUuid);
     if (room == null) {
-      return ResponseEntity.notFound().build();
+      RoomError error = new RoomError("Room does not exist");
+      return new ResponseEntity<>(error, HttpStatus.NOT_FOUND);
     }
     return ResponseEntity.ok(new RoomDto(room.getRoomUuid()));
   }
 
-  @PostMapping("/{uid}/users")
-  public ResponseEntity<?> addUser(@PathVariable("uid") UUID roomUuid,
+  @PostMapping("/{uuid}/users")
+  public ResponseEntity<?> addUser(@PathVariable("uuid") UUID roomUuid,
                                    @RequestBody CreateUserRequest request) {
     try {
       User createdUser = roomService.addUserToRoom(roomUuid, request);
@@ -49,9 +52,11 @@ public class RoomController {
           createdUser.isAdmin(),
           createdUser.getRoom().getRoomUuid()));
     } catch (IllegalArgumentException e) {
-      return ResponseEntity.notFound().build();
+      RoomError error = new RoomError("Room does not exist");
+      return new ResponseEntity<>(error, HttpStatus.NOT_FOUND);
     } catch (IllegalStateException e) {
-      return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
+      UserError error = new UserError("User with this name already exists");
+      return new ResponseEntity<>(error, HttpStatus.CONFLICT);
     }
   }
 }

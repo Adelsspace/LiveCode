@@ -1,8 +1,8 @@
 package ru.hh.blokshnote.service;
 
 import org.springframework.stereotype.Service;
-import ru.hh.blokshnote.dto.requests.CreateRoomRequest;
-import ru.hh.blokshnote.dto.requests.CreateUserRequest;
+import ru.hh.blokshnote.dto.room.request.CreateRoomRequest;
+import ru.hh.blokshnote.dto.user.request.CreateUserRequest;
 import ru.hh.blokshnote.entity.Room;
 import ru.hh.blokshnote.entity.User;
 import ru.hh.blokshnote.repository.RoomRepository;

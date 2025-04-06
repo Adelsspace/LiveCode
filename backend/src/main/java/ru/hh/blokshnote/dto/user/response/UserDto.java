@@ -1,4 +1,6 @@
-package ru.hh.blokshnote.dto.responses;
+package ru.hh.blokshnote.dto.user.response;
+
+import ru.hh.blokshnote.dto.room.response.RoomDto;
 
 import java.util.UUID;
 

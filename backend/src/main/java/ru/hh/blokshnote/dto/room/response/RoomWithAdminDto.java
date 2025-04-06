@@ -1,12 +1,12 @@
-package ru.hh.blokshnote.dto.responses;
+package ru.hh.blokshnote.dto.room.response;
 
 import java.util.UUID;
 
-public class RoomAdminDto {
+public class RoomWithAdminDto {
   private final UUID roomUuid;
   private final String adminToken;
 
-  public RoomAdminDto(UUID roomUuid, String adminToken) {
+  public RoomWithAdminDto(UUID roomUuid, String adminToken) {
     this.roomUuid = roomUuid;
     this.adminToken = adminToken;
   }

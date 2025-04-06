@@ -1,4 +1,4 @@
-package ru.hh.blokshnote.dto.requests;
+package ru.hh.blokshnote.dto.user.request;
 
 
 public class CreateUserRequest {
