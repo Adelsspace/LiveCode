@@ -4,21 +4,21 @@ import styles from "./CodeEditor.module.scss";
 import {
   EditorFontSize,
   EditorTheme,
-  Language,
+  EditorLanguage,
 } from "../../types/shared.types";
 
 type CodeEditorProps = {
   initialCode?: string;
-  language?: Language;
-  theme?: EditorTheme;
+  editorLanguage?: EditorLanguage;
+  editorTheme?: EditorTheme;
   editorFontSize?: EditorFontSize;
   onChange?: (code: string) => void;
 };
 
 const CodeEditor = ({
   initialCode = "// Начните писать код\n",
-  language = "javascript",
-  theme = "vs-dark",
+  editorLanguage = "javascript",
+  editorTheme = "vs-dark",
   editorFontSize = 14,
   onChange,
 }: CodeEditorProps) => {
@@ -35,8 +35,8 @@ const CodeEditor = ({
       <Editor
         height="60vh"
         width="90vw"
-        language={language}
-        theme={theme}
+        language={editorLanguage}
+        theme={editorTheme}
         value={code}
         onChange={handleCodeChange}
         options={{
