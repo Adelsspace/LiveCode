@@ -1,5 +1,6 @@
 package ru.hh.blokshnote.service;
 
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.stereotype.Service;
 import ru.hh.blokshnote.dto.room.request.CreateRoomRequest;
 import ru.hh.blokshnote.dto.user.request.CreateUserRequest;
@@ -8,65 +9,72 @@ import ru.hh.blokshnote.entity.User;
 import ru.hh.blokshnote.repository.RoomRepository;
 import ru.hh.blokshnote.repository.UserRepository;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 
 @Service
 public class RoomService {
+    private static final Duration ROOM_TIME_TO_LIVE = Duration.ofHours(3);
 
-  private final RoomRepository roomRepository;
-  private final UserRepository userRepository;
+    private final RoomRepository roomRepository;
+    private final UserRepository userRepository;
 
-  public RoomService(RoomRepository roomRepository, UserRepository userRepository) {
-    this.roomRepository = roomRepository;
-    this.userRepository = userRepository;
-  }
-
-  public Room createRoomWithAdmin(CreateRoomRequest request) {
-    UUID roomUuid = UUID.randomUUID();
-    String adminToken = UUID.randomUUID().toString();
-    Instant now = Instant.now();
-    Instant expireAt = now.plusSeconds(3600 * 3);
-
-    Room room = new Room();
-    room.setRoomUuid(roomUuid);
-    room.setAdminToken(adminToken);
-    room.setCreatedAt(now);
-    room.setExpiredAt(expireAt);
-    room = roomRepository.save(room);
-
-    User adminUser = new User();
-    adminUser.setName(request.getUsername());
-    adminUser.setAdmin(true);
-    adminUser.setRoom(room);
-    userRepository.save(adminUser);
-
-    return room;
-  }
-
-  public User addUserToRoom(UUID roomUuid, CreateUserRequest request) {
-    Room room = roomRepository.findByRoomUuid(roomUuid);
-    if (room == null) {
-      throw new IllegalArgumentException("Room not found with UUID: " + roomUuid);
+    public RoomService(RoomRepository roomRepository, UserRepository userRepository) {
+        this.roomRepository = roomRepository;
+        this.userRepository = userRepository;
     }
 
-    Optional<User> existingUser = userRepository.findByNameAndRoom(request.getUsername(), room);
-    if (existingUser.isPresent()) {
-      throw new IllegalStateException("User with name " + request.getUsername() + " already exists in this room.");
+    @Transactional
+    public Room createRoomWithAdmin(CreateRoomRequest request) {
+        UUID roomUuid = request.getUuid();
+
+        Optional<Room> existingRoom = roomRepository.findByRoomUuid(roomUuid);
+        if (existingRoom.isPresent()) {
+            return existingRoom.get();
+        }
+
+        Instant now = Instant.now();
+        Room room = new Room();
+        room.setRoomUuid(roomUuid);
+        room.setAdminToken(UUID.randomUUID());
+        room.setCreatedAt(now);
+        room.setExpiredAt(now.plus(ROOM_TIME_TO_LIVE));
+        room = roomRepository.save(room);
+
+        User adminUser = new User();
+        adminUser.setName(request.getUsername());
+        adminUser.setAdmin(true);
+        adminUser.setRoom(room);
+        userRepository.save(adminUser);
+
+        return room;
     }
 
-    User user = new User();
-    user.setName(request.getUsername());
-    user.setAdmin(false);
-    user.setRoom(room);
 
-    return userRepository.save(user);
-  }
+    @Transactional
+    public User addUserToRoom(UUID roomUuid, CreateUserRequest request) {
+        Room room = roomRepository.findByRoomUuid(roomUuid)
+                .orElseThrow(() -> new IllegalArgumentException("Room not found with this UUID"));
 
-  public Room getRoomByUuid(UUID roomUuid) {
-    return roomRepository.findByRoomUuid(roomUuid);
-  }
+        userRepository.findByNameAndRoom(request.getUsername(), room)
+                .ifPresent(user -> {
+                    throw new IllegalStateException("User with this name already exists in the room");
+                });
+
+        User user = new User();
+        user.setName(request.getUsername());
+        user.setAdmin(false);
+        user.setRoom(room);
+        return userRepository.save(user);
+    }
+
+    @Transactional(readOnly = true)
+    public Room getRoomByUuid(UUID roomUuid) {
+        return roomRepository.findByRoomUuid(roomUuid)
+                .orElseThrow(() -> new IllegalArgumentException("Room not found with this UUID"));
+    }
 }
 
 

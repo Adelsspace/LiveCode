@@ -3,19 +3,13 @@ package ru.hh.blokshnote.dto.room.response;
 import java.util.UUID;
 
 public class RoomWithAdminDto {
-  private final UUID roomUuid;
-  private final String adminToken;
+    private final UUID adminToken;
 
-  public RoomWithAdminDto(UUID roomUuid, String adminToken) {
-    this.roomUuid = roomUuid;
-    this.adminToken = adminToken;
-  }
+    public RoomWithAdminDto(UUID adminToken) {
+        this.adminToken = adminToken;
+    }
 
-  public UUID getRoomUuid() {
-    return roomUuid;
-  }
-
-  public String getAdminToken() {
-    return adminToken;
-  }
+    public UUID getAdminToken() {
+        return adminToken;
+    }
 }
