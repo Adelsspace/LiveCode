@@ -5,25 +5,25 @@ import ru.hh.blokshnote.dto.room.response.RoomDto;
 import java.util.UUID;
 
 public class UserDto {
-    private final String name;
-    private final boolean isAdmin;
-    private final RoomDto room;
+  private final String name;
+  private final boolean isAdmin;
+  private final RoomDto room;
 
-    public UserDto(String name, boolean isAdmin, UUID roomUuid) {
-        this.name = name;
-        this.isAdmin = isAdmin;
-        this.room = new RoomDto(roomUuid, "ok");
-    }
+  public UserDto(String name, boolean isAdmin, UUID roomUuid) {
+    this.name = name;
+    this.isAdmin = isAdmin;
+    this.room = new RoomDto(roomUuid, "ok");
+  }
 
-    public String getName() {
-        return name;
-    }
+  public String getName() {
+    return name;
+  }
 
-    public boolean isAdmin() {
-        return isAdmin;
-    }
+  public boolean isAdmin() {
+    return isAdmin;
+  }
 
-    public RoomDto getRoom() {
-        return room;
-    }
+  public RoomDto getRoom() {
+    return room;
+  }
 }

@@ -1,12 +1,11 @@
-package ru.hh.blokshnote.dto.room.error;
+package ru.hh.blokshnote.dto.error;
 
-public class RoomError {
+public class ErrorResponse {
   private final String message;
 
-  public RoomError(String message) {
+  public ErrorResponse(String message) {
     this.message = message;
   }
-
 
   public String getError() {
     return message;
