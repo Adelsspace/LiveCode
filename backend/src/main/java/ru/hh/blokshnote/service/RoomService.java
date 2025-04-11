@@ -19,7 +19,6 @@ import java.util.UUID;
 @Service
 public class RoomService {
   private static final Duration ROOM_TIME_TO_LIVE = Duration.ofHours(3);
-  private static final int ADMIN_TOKEN_START_INDEX = "AdminToken ".length();
 
   private final RoomRepository roomRepository;
   private final UserRepository userRepository;
@@ -82,13 +81,13 @@ public class RoomService {
 
     UUID adminToken;
     try {
-      adminToken = UUID.fromString(adminHeader.substring(ADMIN_TOKEN_START_INDEX));
+      adminToken = UUID.fromString(adminHeader.split(" ")[1]);
     } catch (IllegalArgumentException e) {
       throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid UUID format");
     }
 
     if (!roomAdminToken.equals(adminToken)) {
-      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid admin token");
+      throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Invalid admin token");
     }
 
     userRepository.findByNameAndRoom(request.getUsername(), room)

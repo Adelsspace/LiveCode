@@ -1,5 +1,6 @@
 package ru.hh.blokshnote.controller.exceptions;
 
+import java.util.Map;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -12,29 +13,20 @@ import ru.hh.blokshnote.dto.error.ErrorResponse;
 @RestControllerAdvice(assignableTypes = RoomController.class)
 public class RoomExceptionHandler {
 
+  private static final Map<HttpStatus, String> ERROR_MESSAGES = Map.of(
+      HttpStatus.NOT_FOUND, "Room does not exist",
+      HttpStatus.CONFLICT, "User with this name already exists",
+      HttpStatus.BAD_REQUEST, "Invalid format of admin token",
+      HttpStatus.FORBIDDEN, "Invalid admin token"
+  );
+
   @ExceptionHandler(ResponseStatusException.class)
   public Object handleResponseStatusException(ResponseStatusException ex) {
-    if (ex.getStatusCode() == HttpStatus.NOT_FOUND) {
-      return handleNotFound(ex);
-    }
-    if (ex.getStatusCode() == HttpStatus.CONFLICT) {
-      return handleConflict(ex);
-    }
-    if (ex.getStatusCode() == HttpStatus.BAD_REQUEST) {
-      return handleBadRequest(ex);
+    HttpStatus status = HttpStatus.resolve(ex.getStatusCode().value());
+    String message = ERROR_MESSAGES.get(status);
+    if (message != null) {
+      return ResponseEntity.status(ex.getStatusCode()).body(new ErrorResponse(message));
     }
     throw ex;
-  }
-
-  public ResponseEntity<?> handleNotFound(ResponseStatusException ex) {
-    return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ErrorResponse("Room does not exist"));
-  }
-
-  public ResponseEntity<?> handleConflict(ResponseStatusException ex) {
-    return ResponseEntity.status(HttpStatus.CONFLICT).body(new ErrorResponse("User with this name already exists"));
-  }
-
-  public ResponseEntity<?> handleBadRequest(ResponseStatusException ex) {
-    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ErrorResponse("Invalid admin token"));
   }
 }
