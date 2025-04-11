@@ -19,6 +19,7 @@ import java.util.UUID;
 @Service
 public class RoomService {
   private static final Duration ROOM_TIME_TO_LIVE = Duration.ofHours(3);
+  private static final int ADMIN_TOKEN_START_INDEX = "AdminToken ".length();
 
   private final RoomRepository roomRepository;
   private final UserRepository userRepository;
@@ -67,6 +68,36 @@ public class RoomService {
     User user = new User();
     user.setName(request.getUsername());
     user.setAdmin(false);
+    user.setRoom(room);
+    return userRepository.save(user);
+  }
+
+  @Transactional
+  public User addAdminToRoom(UUID roomUuid, String adminHeader, CreateUserRequest request) {
+    Room room = getRoomByUuid(roomUuid);
+    UUID roomAdminToken = room.getAdminToken();
+    if (!adminHeader.startsWith("AdminToken ")) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid admin token format");
+    }
+
+    UUID adminToken;
+    try {
+      adminToken = UUID.fromString(adminHeader.substring(ADMIN_TOKEN_START_INDEX));
+    } catch (IllegalArgumentException e) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid UUID format");
+    }
+
+    if (!roomAdminToken.equals(adminToken)) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid admin token");
+    }
+
+    userRepository.findByNameAndRoom(request.getUsername(), room)
+        .ifPresent(user -> {
+          throw new ResponseStatusException(HttpStatus.CONFLICT, "User with this name already exists in the room");
+        });
+    User user = new User();
+    user.setName(request.getUsername());
+    user.setAdmin(true);
     user.setRoom(room);
     return userRepository.save(user);
   }
