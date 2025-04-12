@@ -1,14 +1,12 @@
 package ru.hh.blokshnote.controller;
 
-import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import java.util.UUID;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import ru.hh.blokshnote.dto.room.request.CreateRoomRequest;
 import ru.hh.blokshnote.dto.room.response.AdminTokenDto;
@@ -57,15 +55,10 @@ public class RoomController {
   @PostMapping("/{uuid}/admin")
   public UserDto addAdmin(
       @PathVariable("uuid") UUID roomUuid,
-      @Parameter(
-          description = "Admin токен в формате 'AdminToken {uuid}'",
-          required = true,
-          in = ParameterIn.HEADER
-      )
-      @RequestHeader("Authorization") String adminHeader,
+      @RequestParam("adminToken") UUID adminToken,
       @RequestBody CreateUserRequest request
   ) {
-    User createdAdmin = roomService.addAdminToRoom(roomUuid, adminHeader, request);
+    User createdAdmin = roomService.addAdminToRoom(roomUuid, adminToken, request);
     return new UserDto(
         createdAdmin.getName(),
         createdAdmin.isAdmin(),

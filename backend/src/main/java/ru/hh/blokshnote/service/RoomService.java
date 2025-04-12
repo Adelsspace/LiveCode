@@ -1,8 +1,12 @@
 package ru.hh.blokshnote.service;
 
+import java.time.Duration;
+import java.time.Instant;
+import java.util.Optional;
+import java.util.UUID;
 import org.springframework.http.HttpStatus;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 import ru.hh.blokshnote.dto.room.request.CreateRoomRequest;
 import ru.hh.blokshnote.dto.user.request.CreateUserRequest;
@@ -10,11 +14,6 @@ import ru.hh.blokshnote.entity.Room;
 import ru.hh.blokshnote.entity.User;
 import ru.hh.blokshnote.repository.RoomRepository;
 import ru.hh.blokshnote.repository.UserRepository;
-
-import java.time.Duration;
-import java.time.Instant;
-import java.util.Optional;
-import java.util.UUID;
 
 @Service
 public class RoomService {
@@ -72,19 +71,9 @@ public class RoomService {
   }
 
   @Transactional
-  public User addAdminToRoom(UUID roomUuid, String adminHeader, CreateUserRequest request) {
+  public User addAdminToRoom(UUID roomUuid, UUID adminToken, CreateUserRequest request) {
     Room room = getRoomByUuid(roomUuid);
     UUID roomAdminToken = room.getAdminToken();
-    if (!adminHeader.startsWith("AdminToken ")) {
-      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid admin token format");
-    }
-
-    UUID adminToken;
-    try {
-      adminToken = UUID.fromString(adminHeader.split(" ")[1]);
-    } catch (IllegalArgumentException e) {
-      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid UUID format");
-    }
 
     if (!roomAdminToken.equals(adminToken)) {
       throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Invalid admin token");

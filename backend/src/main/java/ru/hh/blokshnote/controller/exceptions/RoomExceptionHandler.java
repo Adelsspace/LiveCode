@@ -16,7 +16,6 @@ public class RoomExceptionHandler {
   private static final Map<HttpStatus, String> ERROR_MESSAGES = Map.of(
       HttpStatus.NOT_FOUND, "Room does not exist",
       HttpStatus.CONFLICT, "User with this name already exists",
-      HttpStatus.BAD_REQUEST, "Invalid format of admin token",
       HttpStatus.FORBIDDEN, "Invalid admin token"
   );
 
