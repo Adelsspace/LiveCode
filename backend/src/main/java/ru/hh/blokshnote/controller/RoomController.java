@@ -1,5 +1,7 @@
 package ru.hh.blokshnote.controller;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -8,8 +10,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import ru.hh.blokshnote.dto.room.request.CreateRoomRequest;
 import ru.hh.blokshnote.dto.room.response.AdminTokenDto;
-import ru.hh.blokshnote.dto.user.request.CreateUserRequest;
 import ru.hh.blokshnote.dto.room.response.RoomDto;
+import ru.hh.blokshnote.dto.room.response.WebSocketUrlDto;
+import ru.hh.blokshnote.dto.user.request.CreateUserRequest;
 import ru.hh.blokshnote.dto.user.response.UserDto;
 import ru.hh.blokshnote.entity.Room;
 import ru.hh.blokshnote.entity.User;
@@ -20,6 +23,8 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/rooms")
 public class RoomController {
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(RoomController.class);
 
   private final RoomService roomService;
 
@@ -48,5 +53,11 @@ public class RoomController {
         createdUser.isAdmin(),
         createdUser.getRoom().getRoomUuid()
     );
+  }
+
+  @GetMapping("/{uuid}/url")
+  public WebSocketUrlDto getWebSocketUrl(@PathVariable("uuid") UUID roomUuid) {
+    LOGGER.info("Request WebSocket URL for roomID={}", roomUuid);
+    return roomService.getRoomUrl(roomUuid);
   }
 }
