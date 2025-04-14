@@ -12,8 +12,8 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import static ru.hh.blokshnote.utility.WebSocketPathParam.ROOM_UUID;
-import static ru.hh.blokshnote.utility.WebSocketPathParam.USER;
+import static ru.hh.blokshnote.utility.WsPathParam.ROOM_UUID;
+import static ru.hh.blokshnote.utility.WsPathParam.USER;
 
 public class HttpHandshakeInterceptor implements HandshakeInterceptor {
 

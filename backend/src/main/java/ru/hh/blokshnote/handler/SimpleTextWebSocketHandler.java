@@ -25,8 +25,10 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
-import static ru.hh.blokshnote.utility.WebSocketPathParam.ROOM_UUID;
-import static ru.hh.blokshnote.utility.WebSocketPathParam.USER;
+import static ru.hh.blokshnote.utility.WsMessageType.NEW_ROOM_STATE;
+import static ru.hh.blokshnote.utility.WsPathParam.MESSAGE_TYPE;
+import static ru.hh.blokshnote.utility.WsPathParam.ROOM_UUID;
+import static ru.hh.blokshnote.utility.WsPathParam.USER;
 
 @Component
 public class SimpleTextWebSocketHandler extends TextWebSocketHandler {
@@ -60,9 +62,11 @@ public class SimpleTextWebSocketHandler extends TextWebSocketHandler {
   protected void handleTextMessage(WebSocketSession session, TextMessage message) {
     Map<String, String> params = getUriParams(session.getUri());
     String roomUuid = params.get(ROOM_UUID.getLabel());
-    Room room = roomService.updateEditorText(UUID.fromString(roomUuid), message.getPayload());
-
-    broadcastToRoom(room);
+    String messageType = params.get(MESSAGE_TYPE.getLabel());
+    if (NEW_ROOM_STATE.name().equals(messageType)) {
+      Room room = roomService.updateEditorText(UUID.fromString(roomUuid), message.getPayload());
+      broadcastToRoom(room);
+    }
   }
 
   @Override

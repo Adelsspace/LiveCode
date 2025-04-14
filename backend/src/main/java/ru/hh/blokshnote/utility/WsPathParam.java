@@ -1,12 +1,13 @@
 package ru.hh.blokshnote.utility;
 
-public enum WebSocketPathParam {
+public enum WsPathParam {
   USER("user"),
-  ROOM_UUID("roomUuid");
+  ROOM_UUID("roomUuid"),
+  MESSAGE_TYPE("message_type");
 
   private final String label;
 
-  WebSocketPathParam(String label) {
+  WsPathParam(String label) {
     this.label = label;
   }
 
