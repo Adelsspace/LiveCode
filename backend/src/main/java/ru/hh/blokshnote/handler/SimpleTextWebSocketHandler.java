@@ -1,16 +1,18 @@
 package ru.hh.blokshnote.handler;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
-import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
-import ru.hh.blokshnote.repository.RoomRepository;
+import ru.hh.blokshnote.entity.Room;
+import ru.hh.blokshnote.mapper.RoomMapper;
+import ru.hh.blokshnote.service.RoomService;
 
 import java.io.IOException;
 import java.net.URI;
@@ -23,52 +25,58 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
+import static ru.hh.blokshnote.utility.WebSocketPathParam.ROOM_UUID;
+import static ru.hh.blokshnote.utility.WebSocketPathParam.USER;
+
 @Component
 public class SimpleTextWebSocketHandler extends TextWebSocketHandler {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(SimpleTextWebSocketHandler.class);
+  private final RoomService roomService;
+  private final RoomMapper roomMapper;
+  private final Map<String, Set<WebSocketSession>> roomsSessions;
+  private final ObjectMapper objectMapper;
 
-  @Autowired
-  private RoomRepository roomRepository;
-
-  private final Map<String, Set<WebSocketSession>> roomsSessions = new ConcurrentHashMap<>();
-
+  public SimpleTextWebSocketHandler(RoomService roomService, RoomMapper roomMapper) {
+    this.roomService = roomService;
+    this.roomMapper = roomMapper;
+    this.roomsSessions = new ConcurrentHashMap<>();
+    this.objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
+  }
 
   @Override
-  public void afterConnectionEstablished(WebSocketSession session) throws Exception {
+  public void afterConnectionEstablished(WebSocketSession session) {
     Map<String, String> params = getUriParams(session.getUri());
-    String roomId = params.get("roomId");
-    roomRepository.findByRoomUuid(UUID.fromString(roomId))
-        .orElseThrow(() -> {
-          LOGGER.info("Room with UUID={} not found", roomId);
-          return new ResponseStatusException(HttpStatus.NOT_FOUND, String.format("Room with UUID=%s not found", roomId));
-        });
+    String roomUuid = params.get(ROOM_UUID.getLabel());
+    String user = params.get(USER.getLabel());
+    Room room = roomService.getRoomByUuid(UUID.fromString(roomUuid));
+    roomsSessions.computeIfAbsent(roomUuid, t -> new HashSet<>()).add(session);
+    LOGGER.info("User {} connected to room {}", user, roomUuid);
 
-    roomsSessions.computeIfAbsent(roomId, t -> new HashSet<>()).add(session);
-    LOGGER.info("User connected to room: {}", roomId);
-    session.sendMessage(new TextMessage("Room state on connect"));
+    broadcastToRoom(room);
   }
 
   @Override
   protected void handleTextMessage(WebSocketSession session, TextMessage message) {
     Map<String, String> params = getUriParams(session.getUri());
-    String roomId = params.get("roomId");
-    Set<WebSocketSession> sessions = roomsSessions.get(roomId);
-    sessions.forEach(clientSession -> {
-      try {
-        clientSession.sendMessage(new TextMessage("Room state message"));
-      } catch (IOException e) {
-        LOGGER.info("Error while sending message: {}", e.getMessage());
-      }
-    });
+    String roomUuid = params.get(ROOM_UUID.getLabel());
+    Room room = roomService.updateEditorText(UUID.fromString(roomUuid), message.getPayload());
+
+    broadcastToRoom(room);
   }
 
   @Override
   public void afterConnectionClosed(WebSocketSession session, CloseStatus status) {
     Map<String, String> params = getUriParams(session.getUri());
-    String roomId = params.get("roomId");
-    roomsSessions.get(roomId).remove(session);
-    LOGGER.info("User disconnected from room: {}", roomId);
+    String roomUuid = params.get(ROOM_UUID.getLabel());
+    Set<WebSocketSession> sessions = roomsSessions.get(roomUuid);
+    if (sessions != null) {
+      sessions.remove(session);
+    }
+    LOGGER.info("User disconnected from room: {}", roomUuid);
+    Room room = roomService.getRoomByUuid(UUID.fromString(roomUuid));
+
+    broadcastToRoom(room);
   }
 
   private Map<String, String> getUriParams(URI uri) {
@@ -80,5 +88,22 @@ public class SimpleTextWebSocketHandler extends TextWebSocketHandler {
         .map(p -> p.split("=", 2))
         .filter(p -> p.length == 2)
         .collect(Collectors.toMap(p -> p[0], p -> p[1]));
+  }
+
+  private void broadcastToRoom(Room room) {
+    String roomUuid = room.getRoomUuid().toString();
+    Set<String> users = roomsSessions.get(roomUuid).stream()
+        .map(roomSession -> getUriParams(roomSession.getUri()).get(USER.getLabel()))
+        .collect(Collectors.toSet());
+    roomsSessions.getOrDefault(roomUuid, Collections.emptySet())
+        .forEach(session -> {
+          try {
+            session.sendMessage(new TextMessage(objectMapper.writeValueAsString(roomMapper.toRoomStateDto(room, users))));
+          } catch (JsonProcessingException e) {
+            LOGGER.info("Error while mapping object to json: {}", e.getMessage());
+          } catch (IOException e) {
+            LOGGER.info("Error while sending message: {}", e.getMessage());
+          }
+        });
   }
 }

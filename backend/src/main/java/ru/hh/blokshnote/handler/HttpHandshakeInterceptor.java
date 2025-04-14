@@ -12,6 +12,9 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import static ru.hh.blokshnote.utility.WebSocketPathParam.ROOM_UUID;
+import static ru.hh.blokshnote.utility.WebSocketPathParam.USER;
+
 public class HttpHandshakeInterceptor implements HandshakeInterceptor {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(HttpHandshakeInterceptor.class);
@@ -21,10 +24,11 @@ public class HttpHandshakeInterceptor implements HandshakeInterceptor {
                                  Map<String, Object> attributes) {
 
     Map<String, String> parameters = parseQuery(request.getURI().getQuery());
-    String roomId = parameters.get("roomId");
-    String token = parameters.get("token");
-    if (roomId != null && token != null) return true;
-    LOGGER.info("roomId or token is null");
+    String roomUuid = parameters.get(ROOM_UUID.getLabel());
+    String user = parameters.get(USER.getLabel());
+    if (roomUuid != null && user != null) return true;
+
+    LOGGER.info("roomUuid={} or user={} is null", roomUuid, user);
     return false;
   }
 

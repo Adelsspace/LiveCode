@@ -56,6 +56,7 @@ public class RoomService {
     room.setAdminToken(UUID.randomUUID());
     room.setCreatedAt(now);
     room.setExpiredAt(now.plus(ROOM_TIME_TO_LIVE));
+    room.setEditorText("");
     room = roomRepository.save(room);
 
     User adminUser = new User();
@@ -87,7 +88,10 @@ public class RoomService {
   @Transactional(readOnly = true)
   public Room getRoomByUuid(UUID roomUuid) {
     return roomRepository.findByRoomUuid(roomUuid)
-        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Room not found with this UUID"));
+        .orElseThrow(() -> {
+          LOGGER.info("Room with UUID={} not found", roomUuid);
+          return new ResponseStatusException(HttpStatus.NOT_FOUND, String.format("Room with UUID=%s not found", roomUuid));
+        });
   }
 
   @Transactional(readOnly = true)
@@ -99,6 +103,15 @@ public class RoomService {
         });
     return new WebSocketUrlDto(String.format("ws://%s:%d%s", serverHost, serverPort, WebSocketConfig.ROOM_URI_TEMPLATE));
   }
+
+  @Transactional
+  public Room updateEditorText(UUID roomUuid, String editorText) {
+    Room room = roomRepository.findByRoomUuid(roomUuid)
+        .orElseThrow(() -> {
+          LOGGER.info("Room with UUID={} not found", roomUuid);
+          return new ResponseStatusException(HttpStatus.NOT_FOUND, String.format("Room with UUID=%s not found", roomUuid));
+        });
+    room.setEditorText(editorText);
+    return roomRepository.save(room);
+  }
 }
-
-
