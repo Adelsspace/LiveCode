@@ -14,6 +14,7 @@ import {
   changeEditorTheme,
   getSettings,
 } from "../../utils";
+import ThemeToggle from "../../components/ThemeToggle/ThemeToggle";
 
 export default function RoomPage() {
   const { roomId } = useParams<{ roomId: string }>();
@@ -55,6 +56,8 @@ export default function RoomPage() {
   return (
     <div>
       <div className={styles.dropdownsContainer}>
+        <div>Blokshnote</div>
+        <ThemeToggle />
         <Dropdown
           options={editorLanguages}
           defaultValue={editorLanguage}
