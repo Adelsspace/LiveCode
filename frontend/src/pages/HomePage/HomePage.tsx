@@ -13,7 +13,7 @@ const HomePage = () => {
   return (
     <>
       <header className={styles.header_container}>
-        <div> Blokshonte</div> <ThemeToggle />
+        <div className={styles.logo}> Blokshnote</div> <ThemeToggle />
       </header>
       <section className={styles.main_container}>
         <h1 className={styles.title}>
