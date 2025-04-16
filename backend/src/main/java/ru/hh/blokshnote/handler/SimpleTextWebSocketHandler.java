@@ -104,7 +104,7 @@ public class SimpleTextWebSocketHandler extends TextWebSocketHandler {
           try {
             session.sendMessage(new TextMessage(objectMapper.writeValueAsString(roomMapper.toRoomStateDto(room, users))));
           } catch (JsonProcessingException e) {
-            LOGGER.info("Error while mapping object to json: {}", e.getMessage());
+            LOGGER.warn("Error while mapping object to json: {}", e.getMessage());
           } catch (IOException e) {
             LOGGER.info("Error while sending message: {}", e.getMessage());
           }
