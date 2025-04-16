@@ -96,5 +96,3 @@ public class RoomService {
         .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Room not found with this UUID"));
   }
 }
-
-

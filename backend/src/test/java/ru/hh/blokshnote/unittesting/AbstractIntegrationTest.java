@@ -9,7 +9,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @SpringBootTest
 @Testcontainers
 public abstract class AbstractIntegrationTest {
-  static final String IMAGE = "postgres:latest";
+  static final String IMAGE = "postgres:17.4";
 
   @Container
   @ServiceConnection
