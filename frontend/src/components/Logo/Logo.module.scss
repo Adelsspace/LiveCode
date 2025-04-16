@@ -1,0 +1,6 @@
+@use "../../styles/variables" as *;
+.logo {
+  font-weight: bold;
+  font-size: $font-size-xl;
+  color: var(--accent);
+}
