@@ -31,15 +31,8 @@ public class Room {
   @Column(name = "expired_at")
   private Instant expiredAt;
 
-  public Room() {
-  }
-
-  public Room(UUID roomUuid, UUID adminToken, Instant createdAt, Instant expiredAt) {
-    this.roomUuid = roomUuid;
-    this.adminToken = adminToken;
-    this.createdAt = createdAt;
-    this.expiredAt = expiredAt;
-  }
+  @Column(name = "editor_text", nullable = false)
+  private String editorText;
 
   public Long getId() {
     return id;
@@ -75,5 +68,13 @@ public class Room {
 
   public void setExpiredAt(Instant expiredAt) {
     this.expiredAt = expiredAt;
+  }
+
+  public String getEditorText() {
+    return editorText;
+  }
+
+  public void setEditorText(String editorText) {
+    this.editorText = editorText;
   }
 }
