@@ -1,0 +1,36 @@
+@use "../../styles/variables" as *;
+
+.main_container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+.header_container {
+  display: flex;
+  padding: 20px;
+  justify-content: space-between;
+  margin-bottom: 80px;
+}
+
+.title {
+  color: var(--text);
+  font-size: $font-size-lg;
+  padding: 40px 0px;
+  background: linear-gradient(to right, var(--text), var(--accent));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.button {
+  background: var(--secondary);
+  color: var(--text);
+  border: 1px solid var(--border);
+
+  &:hover {
+    background: var(--hover);
+    color: var(--text);
+  }
+}

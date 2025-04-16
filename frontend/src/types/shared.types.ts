@@ -7,3 +7,9 @@ export type EditorSettings = {
   editorTheme: EditorTheme;
   editorFontSize: EditorFontSize;
 };
+
+export type Participant = {
+  roomId: string;
+  adminToken?: string;
+  username: string;
+};
