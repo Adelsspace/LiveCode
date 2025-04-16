@@ -2,6 +2,8 @@
 
 ## Запуск проекта
 
+Загрузить https://nodejs.org/en если не установлен
+
 npm install
 
 npm run dev
