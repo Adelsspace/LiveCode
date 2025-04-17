@@ -1,54 +1,61 @@
 import { useState } from "react";
-import Editor from "@monaco-editor/react";
-import styles from "./CodeEditor.module.scss";
+import {
+  changeEditorFontSize,
+  changeEditorLanguage,
+  changeEditorTheme,
+  getSettings,
+} from "../../utils";
 import {
   EditorFontSize,
-  EditorTheme,
   EditorLanguage,
+  EditorTheme,
 } from "../../types/shared.types";
+import { EditorControls } from "../EditorControls/EditorControls";
+import MonacoEditor from "../MonacoEditor/MonacoEditor";
 
-type CodeEditorProps = {
-  initialCode?: string;
-  editorLanguage?: EditorLanguage;
-  editorTheme?: EditorTheme;
-  editorFontSize?: EditorFontSize;
-  onChange?: (code: string) => void;
-};
+interface CodeEditor {
+  isAdmin: boolean;
+}
 
-const CodeEditor = ({
-  initialCode = "// Начните писать код\n",
-  editorLanguage = "javascript",
-  editorTheme = "vs-dark",
-  editorFontSize = 14,
-  onChange,
-}: CodeEditorProps) => {
-  const [code, setCode] = useState(initialCode);
-
-  const handleCodeChange = (value: string | undefined) => {
-    const newCode = value || "";
-    setCode(newCode);
-    onChange?.(newCode);
+export const CodeEditor = ({ isAdmin }: CodeEditor) => {
+  const initialSettings = getSettings();
+  const [editorLanguage, setEditorLanguage] = useState(
+    initialSettings.editorLanguage
+  );
+  const [editorTheme, setEditorTheme] = useState(initialSettings.editorTheme);
+  const [editorFontSize, setEditorFontSize] = useState(
+    initialSettings.editorFontSize
+  );
+  const handleLanguageChange = (newLanguage: EditorLanguage) => {
+    setEditorLanguage(newLanguage);
+    changeEditorLanguage(newLanguage);
   };
 
+  const handleThemeChange = (newTheme: EditorTheme) => {
+    setEditorTheme(newTheme);
+    changeEditorTheme(newTheme);
+  };
+
+  const handleFontSizeChange = (newFontSize: EditorFontSize) => {
+    setEditorFontSize(newFontSize);
+    changeEditorFontSize(newFontSize);
+  };
   return (
-    <div className={styles.editorContainer}>
-      <Editor
-        height="60vh"
-        width="90vw"
-        language={editorLanguage}
-        theme={editorTheme}
-        value={code}
-        onChange={handleCodeChange}
-        options={{
-          minimap: { enabled: false },
-          fontSize: editorFontSize,
-          lineNumbers: "on",
-          roundedSelection: false,
-          scrollBeyondLastLine: false,
-        }}
+    <div>
+      <EditorControls
+        editorLanguage={editorLanguage}
+        editorTheme={editorTheme}
+        editorFontSize={editorFontSize}
+        onLanguageChange={handleLanguageChange}
+        onThemeChange={handleThemeChange}
+        onFontSizeChange={handleFontSizeChange}
+        isAdmin={isAdmin}
+      />
+      <MonacoEditor
+        editorTheme={editorTheme}
+        editorLanguage={editorLanguage}
+        editorFontSize={editorFontSize}
       />
     </div>
   );
 };
-
-export default CodeEditor;
