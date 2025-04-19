@@ -35,5 +35,5 @@ sudo apt install openjdk-17-jdk
 ## Обновление OpenAPI спецификации
 
 ```bash
-mvn clean test
+mvn clean test -Dtest=OpenApiGenerationTest
 ```
