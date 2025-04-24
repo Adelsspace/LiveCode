@@ -1,11 +1,5 @@
 package ru.hh.blokshnote.unittesting;
 
-import java.util.UUID;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,6 +12,14 @@ import ru.hh.blokshnote.dto.user.request.CreateUserRequest;
 import ru.hh.blokshnote.entity.Room;
 import ru.hh.blokshnote.entity.User;
 import ru.hh.blokshnote.service.RoomService;
+
+import java.util.UUID;
+
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @SpringBootTest
 @Transactional
@@ -59,7 +61,7 @@ public class RoomServiceTest extends AbstractIntegrationTest {
 
     assertThatThrownBy(() -> roomService.getRoomByUuid(nonExistentRoomUuid))
         .isInstanceOf(ResponseStatusException.class)
-        .hasMessageContaining("Room not found with this UUID")
+        .hasMessageContaining("Room with UUID=" + tempUuid + " not found")
         .matches(ex -> ((ResponseStatusException) ex).getStatusCode().equals(HttpStatus.NOT_FOUND));
   }
 
