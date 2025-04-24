@@ -20,16 +20,16 @@ sudo apt update
 sudo apt install openjdk-17-jdk
 ```
 
-## Инструкция по запуску backend
+## Инструкция по сборке бэкенда
 
 1. Должен быть установлен и запущен docker
 2. Должен быть установлен jdk-17 или выше
-3. Запустить две команды ниже
+3. Запустить команду ниже
 
 ## Сборка образа с кодом
 
 ```bash
-./mvnw spring-boot:build-image
+./mvnw spring-boot:build-image -DskipTests
 ```
 
 ## Запуск контейнера с базой
