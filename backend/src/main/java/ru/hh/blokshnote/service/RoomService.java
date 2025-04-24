@@ -8,6 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 import ru.hh.blokshnote.config.WebSocketConfig;
 import ru.hh.blokshnote.dto.room.request.CreateRoomRequest;
+import ru.hh.blokshnote.dto.room.request.RoomStateMessageDto;
 import ru.hh.blokshnote.dto.room.response.WebSocketUrlDto;
 import ru.hh.blokshnote.dto.user.request.CreateUserRequest;
 import ru.hh.blokshnote.entity.Room;
@@ -120,13 +121,13 @@ public class RoomService {
   }
 
   @Transactional
-  public Room updateEditorText(UUID roomUuid, String editorText) {
+  public Room updateEditorText(UUID roomUuid, RoomStateMessageDto messageDto) {
     Room room = roomRepository.findByRoomUuid(roomUuid)
         .orElseThrow(() -> {
           LOGGER.info("Room with UUID={} not found", roomUuid);
           return new ResponseStatusException(HttpStatus.NOT_FOUND, String.format("Room with UUID=%s not found", roomUuid));
         });
-    room.setEditorText(editorText);
+    room.setEditorText(messageDto.getEditorText());
     return roomRepository.save(room);
   }
 }
