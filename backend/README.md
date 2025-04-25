@@ -32,6 +32,13 @@ sudo apt install openjdk-17-jdk
 ./mvnw spring-boot:build-image -DskipTests
 ```
 
+
+## Обновление OpenAPI спецификации
+
+```bash
+mvn clean test -Dtest=OpenApiGenerationTest
+```
+
 ## Запуск контейнера с базой
 
 ```bash
