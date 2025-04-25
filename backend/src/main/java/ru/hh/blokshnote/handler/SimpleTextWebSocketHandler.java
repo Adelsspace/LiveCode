@@ -10,6 +10,7 @@ import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
+import ru.hh.blokshnote.dto.room.request.RoomStateMessageDto;
 import ru.hh.blokshnote.entity.Room;
 import ru.hh.blokshnote.mapper.RoomMapper;
 import ru.hh.blokshnote.service.RoomService;
@@ -64,8 +65,15 @@ public class SimpleTextWebSocketHandler extends TextWebSocketHandler {
     String roomUuid = params.get(ROOM_UUID.getLabel());
     String messageType = params.get(MESSAGE_TYPE.getLabel());
     if (NEW_ROOM_STATE.name().equals(messageType)) {
-      Room room = roomService.updateEditorText(UUID.fromString(roomUuid), message.getPayload());
-      broadcastToRoom(room);
+      try {
+        Room room = roomService.updateEditorText(
+            UUID.fromString(roomUuid),
+            objectMapper.readValue(message.getPayload(), RoomStateMessageDto.class)
+        );
+        broadcastToRoom(room);
+      } catch (JsonProcessingException e) {
+        LOGGER.warn("Error while mapping json={} to object: {}", message.getPayload(), e.getMessage());
+      }
     }
   }
 
