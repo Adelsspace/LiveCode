@@ -1,0 +1,93 @@
+databaseChangeLog:
+- logicalFilePath: db/changelog/migrations/init.yaml
+- changeSet:
+    id: 1745407106580-1
+    author: misha (generated)
+    changes:
+    - createTable:
+        columns:
+        - column:
+            autoIncrement: true
+            constraints:
+              nullable: false
+              primaryKey: true
+              primaryKeyName: rooms_pkey
+            name: id
+            type: BIGINT
+        - column:
+            constraints:
+              nullable: false
+            name: admin_token
+            type: UUID
+        - column:
+            constraints:
+              nullable: false
+            name: created_at
+            type: TIMESTAMP WITH TIME ZONE
+        - column:
+            constraints:
+              nullable: false
+            name: editor_text
+            type: VARCHAR(255)
+        - column:
+            name: expired_at
+            type: TIMESTAMP WITH TIME ZONE
+        - column:
+            constraints:
+              nullable: false
+            name: room_uuid
+            type: UUID
+        tableName: rooms
+- changeSet:
+    id: 1745407106580-2
+    author: misha (generated)
+    changes:
+    - addUniqueConstraint:
+        columnNames: room_uuid
+        constraintName: ukcl6r8y4c5jhbs4tbjoceqk824
+        tableName: rooms
+- changeSet:
+    id: 1745407106580-3
+    author: misha (generated)
+    changes:
+    - createTable:
+        columns:
+        - column:
+            autoIncrement: true
+            constraints:
+              nullable: false
+              primaryKey: true
+              primaryKeyName: users_pkey
+            name: id
+            type: BIGINT
+        - column:
+            constraints:
+              nullable: false
+            name: is_admin
+            type: BOOLEAN
+        - column:
+            constraints:
+              nullable: false
+            name: name
+            type: VARCHAR(255)
+        - column:
+            constraints:
+              nullable: false
+            name: room_id
+            type: BIGINT
+        tableName: users
+- changeSet:
+    id: 1745407106580-4
+    author: misha (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: room_id
+        baseTableName: users
+        constraintName: fklp7mqwp35k0xb2vyjw7rsi9gb
+        deferrable: false
+        initiallyDeferred: false
+        onDelete: NO ACTION
+        onUpdate: NO ACTION
+        referencedColumnNames: id
+        referencedTableName: rooms
+        validate: true
