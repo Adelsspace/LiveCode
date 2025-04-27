@@ -33,6 +33,53 @@ sudo apt install openjdk-17-jdk
 ./mvnw spring-boot:build-image -DskipTests
 ```
 
+## Обновление OpenAPI спецификации
+
+```bash
+mvn clean test -Dtest=OpenApiGenerationTest
+```
+
+## Запуск контейнера с базой
+
+```bash
+docker-compose up -d --build
+```
+
+## Взаимодействие с WebSocket
+
+Для получения ссылки выполнить GET запрос на "/api/rooms/{uuid}/url", где {uuid} - UUID комнаты.  
+Пример тела ответа:
+
+```json
+{
+  "wsConnectUrl": "ws://localhost:8080/ws/room/connect"
+}
+```
+Для подключения и обмена сообщениями ссылка должна содержать параметры "user" и "roomUuid", в которых передаются имя пользователя и UUID комнаты.
+Для передачи в сообщении состояния комнаты ссылка должна содержать параметр "message_type=NEW_ROOM_STATE".
+Пример ссылки:
+
+```
+ws://localhost:8080/ws/room/connect?user=John&roomUuid=82cf90c2-b024-4ad1-899a-ab929849df03&message_type=NEW_ROOM_STATE
+```
+
+Пример тела сообщения:
+```json
+{
+  "editorText": "public static"
+}
+```
+При подключении или отключении пользователя и приёме сообщения всем пользователям комнаты рассылается текущее состояние комнаты в виде:
+```json
+{
+  "editorText": "public static",
+  "users": [
+    "John",
+    "Jane"
+  ]
+}
+```
+
 ## Создание и управление миграциями
 
 ## Управление миграциями БД в Docker
