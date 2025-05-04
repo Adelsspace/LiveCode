@@ -1,25 +1,38 @@
 package ru.hh.blokshnote.config;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.web.socket.config.annotation.EnableWebSocket;
-import org.springframework.web.socket.config.annotation.WebSocketConfigurer;
-import org.springframework.web.socket.config.annotation.WebSocketHandlerRegistry;
-import ru.hh.blokshnote.handler.SimpleTextWebSocketHandler;
+import com.corundumstudio.socketio.AuthorizationResult;
+import com.corundumstudio.socketio.Configuration;
+import com.corundumstudio.socketio.SocketIOServer;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Bean;
+import ru.hh.blokshnote.handler.RoomSocketHandler;
 
-@Configuration
-@EnableWebSocket
-public class WebSocketConfig implements WebSocketConfigurer {
+@org.springframework.context.annotation.Configuration
+public class WebSocketConfig {
 
   public static final String ROOM_URI_TEMPLATE = "/ws/room/connect";
 
-  @Autowired
-  private SimpleTextWebSocketHandler webSocketHandler;
+  @Value("${socketio.host}")
+  private String host;
+  @Value("${socketio.port}")
+  private int port;
 
-  @Override
-  public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
-    registry.addHandler(webSocketHandler, ROOM_URI_TEMPLATE)
-        .setAllowedOrigins("*");
+  @Bean
+  public SocketIOServer socketIOServer(RoomSocketHandler handler) {
+    Configuration config = new Configuration();
+    config.setHostname(host);
+    config.setPort(port);
+    config.setAuthorizationListener(data -> {
+          if (data.getSingleUrlParam("user") != null && data.getSingleUrlParam("roomUuid") != null) {
+            return AuthorizationResult.SUCCESSFUL_AUTHORIZATION;
+          }
+          return AuthorizationResult.FAILED_AUTHORIZATION;
+        }
+    );
+    SocketIOServer server = new SocketIOServer(config);
+    handler.registerListeners(server.addNamespace(ROOM_URI_TEMPLATE));
+    server.start();
+    return server;
   }
 }
 

@@ -1,6 +1,5 @@
 package ru.hh.blokshnote.controller;
 
-import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -74,8 +73,8 @@ public class RoomController {
   }
 
   @GetMapping("/{uuid}/url")
-  public WebSocketUrlDto getWebSocketUrl(@PathVariable("uuid") UUID roomUuid, HttpServletRequest request) {
+  public WebSocketUrlDto getWebSocketUrl(@PathVariable("uuid") UUID roomUuid) {
     LOGGER.info("Request websocket URL for roomUuid={}", roomUuid);
-    return roomService.getRoomUrl(roomUuid, request.getServerName(), request.getServerPort(), request.getScheme());
+    return roomService.getRoomUrl(roomUuid);
   }
 }

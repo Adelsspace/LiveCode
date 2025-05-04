@@ -2,6 +2,7 @@ package ru.hh.blokshnote.service;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,6 +28,10 @@ public class RoomService {
   private static final Logger LOGGER = LoggerFactory.getLogger(RoomService.class);
 
   private static final Duration ROOM_TIME_TO_LIVE = Duration.ofHours(3);
+  @Value("${socketio.host}")
+  private String serverHost;
+  @Value("${socketio.port}")
+  private int serverPort;
 
   private final RoomRepository roomRepository;
   private final UserRepository userRepository;
@@ -110,14 +115,13 @@ public class RoomService {
   }
 
   @Transactional(readOnly = true)
-  public WebSocketUrlDto getRoomUrl(UUID roomUuid, String serverHost, int serverPort, String scheme) {
+  public WebSocketUrlDto getRoomUrl(UUID roomUuid) {
     roomRepository.findByRoomUuid(roomUuid)
         .orElseThrow(() -> {
           LOGGER.info("Room with UUID={} not found", roomUuid);
           return new ResponseStatusException(HttpStatus.NOT_FOUND, String.format("Room with UUID=%s not found", roomUuid));
         });
-    String wsScheme = "https".equals(scheme) ? "wss" : "ws";
-    return new WebSocketUrlDto(String.format("%s://%s:%d%s", wsScheme, serverHost, serverPort, WebSocketConfig.ROOM_URI_TEMPLATE));
+    return new WebSocketUrlDto(String.format("ws://%s:%d%s", serverHost, serverPort, WebSocketConfig.ROOM_URI_TEMPLATE));
   }
 
   @Transactional
