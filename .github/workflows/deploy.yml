@@ -85,6 +85,8 @@ jobs:
 
       - name: Checkout repo
         uses: actions/checkout@v4
+        with:
+          ref: deploy
 
       - name: Copy nginx configuration to remote server
         uses: appleboy/scp-action@v1
