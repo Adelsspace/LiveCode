@@ -40,7 +40,7 @@ jobs:
         with:
           registry: ghcr.io
           username: ${{ secrets.REGISTRY_USER }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          password: ${{ secrets.REGISTRY_TOKEN }}
 
       - name: Build & push backend image with Buildpacks
         run: |
@@ -105,7 +105,7 @@ jobs:
       - name: remote docker-compose up via ssh
         uses: appleboy/ssh-action@v1
         env:
-          APPTOKEN: ${{ secrets.GITHUB_TOKEN }}
+          APPTOKEN: ${{ secrets.REGISTRY_TOKEN }}
           USERNAME: ${{ secrets.REGISTRY_USER }}
         with:
           host: ${{ secrets.SERVER_HOST }}
