@@ -1,4 +1,4 @@
-FROM node:23-alpine AS build
+FROM node:20-alpine AS build
 
 COPY package.json .
 
@@ -8,7 +8,7 @@ COPY . .
 
 RUN npm run build
 
-FROM nginx:1.27
+FROM nginx:1.26
 
 COPY --from=build /dist /usr/share/nginx/html
 COPY --from=build nginx/default.conf /etc/nginx/conf.d/default.conf
