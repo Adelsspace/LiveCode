@@ -117,5 +117,7 @@ jobs:
           script: |
             echo $APPTOKEN | docker login ghcr.io -u $USERNAME --password-stdin
             cd ~/bloksh/
+            docker-compose -f ./docker-compose.prod.yml down
+            docker rmi -f $(docker images -aq)
             docker-compose -f ./docker-compose.prod.yml pull
             docker-compose -f ./docker-compose.prod.yml up --build -d
