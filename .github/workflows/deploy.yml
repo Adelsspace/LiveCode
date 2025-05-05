@@ -86,7 +86,7 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Copy to Remote Server
+      - name: Copy nginx configuration to remote server
         uses: appleboy/scp-action@v1
         with:
           host: ${{ secrets.SERVER_HOST }}
@@ -95,7 +95,7 @@ jobs:
           source: "./nginx/prod.conf"
           target: "~/bloksh"
 
-      - name: Copy to Remote Server 2
+      - name: Copy docker-compose file to remote server
         uses: appleboy/scp-action@v1
         with:
           host: ${{ secrets.SERVER_HOST }}

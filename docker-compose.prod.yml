@@ -18,7 +18,7 @@ services:
       - pgdata:/var/lib/postgresql/data
 
   code-backend:
-    image: mishablin/bloksh-backend:latest
+    image: ghcr.io/mishablin/bloksh-backend:latest
     restart: unless-stopped
     environment:
       SPRING_PROFILES_ACTIVE: prod
@@ -30,7 +30,7 @@ services:
         condition: service_healthy
 
   code-frontend:
-    image: mishablin/bloksh-frontend:latest
+    image: ghcr.io/mishablin/bloksh-frontend:latest
     restart: unless-stopped
     depends_on:
       - code-backend
