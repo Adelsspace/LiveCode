@@ -13,11 +13,17 @@ import {
 import { EditorControls } from "../EditorControls/EditorControls";
 import MonacoEditor from "../MonacoEditor/MonacoEditor";
 
-interface CodeEditor {
+interface CodeEditorProps {
   isAdmin: boolean;
+  initialCode?: string;
+  onCodeChange?: (code: string) => void;
 }
 
-export const CodeEditor = ({ isAdmin }: CodeEditor) => {
+export const CodeEditor = ({
+  isAdmin,
+  initialCode = "",
+  onCodeChange,
+}: CodeEditorProps) => {
   const initialSettings = getSettings();
   const [editorLanguage, setEditorLanguage] = useState(
     initialSettings.editorLanguage
@@ -52,9 +58,11 @@ export const CodeEditor = ({ isAdmin }: CodeEditor) => {
         isAdmin={isAdmin}
       />
       <MonacoEditor
-        editorTheme={editorTheme}
+        initialCode={initialCode}
         editorLanguage={editorLanguage}
+        editorTheme={editorTheme}
         editorFontSize={editorFontSize}
+        onCodeChange={onCodeChange}
       />
     </div>
   );

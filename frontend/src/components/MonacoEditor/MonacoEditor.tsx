@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Editor from "@monaco-editor/react";
 import styles from "./MonacoEditor.module.scss";
 import {
@@ -12,7 +12,7 @@ type CodeEditorProps = {
   editorLanguage?: EditorLanguage;
   editorTheme?: EditorTheme;
   editorFontSize?: EditorFontSize;
-  onChange?: (code: string) => void;
+  onCodeChange?: (code: string) => void;
 };
 
 const MonacoEditor = ({
@@ -20,14 +20,18 @@ const MonacoEditor = ({
   editorLanguage = "javascript",
   editorTheme = "vs-dark",
   editorFontSize = 14,
-  onChange,
+  onCodeChange,
 }: CodeEditorProps) => {
-  const [code, setCode] = useState(initialCode);
+  const [localCode, setLocalCode] = useState(initialCode);
 
-  const handleCodeChange = (value: string | undefined) => {
+  useEffect(() => {
+    setLocalCode(initialCode);
+  }, [initialCode]);
+
+  const handleEditorChange = (value?: string) => {
     const newCode = value || "";
-    setCode(newCode);
-    onChange?.(newCode);
+    setLocalCode(newCode);
+    onCodeChange?.(newCode);
   };
 
   return (
@@ -37,8 +41,8 @@ const MonacoEditor = ({
         width="90vw"
         language={editorLanguage}
         theme={editorTheme}
-        value={code}
-        onChange={handleCodeChange}
+        value={localCode}
+        onChange={handleEditorChange}
         options={{
           minimap: { enabled: false },
           fontSize: editorFontSize,
