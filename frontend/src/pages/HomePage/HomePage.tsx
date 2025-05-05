@@ -3,13 +3,14 @@ import axios from "axios";
 import styles from "./HomePage.module.scss";
 import ThemeToggle from "../../components/ThemeToggle/ThemeToggle";
 import { Logo } from "../../components";
+import { v4 as uuidv4 } from 'uuid';
 
 const HomePage = () => {
   const navigate = useNavigate();
 
   const handleCreateRoom = async () => {
     try {
-      const roomId = crypto.randomUUID();
+      const roomId = uuidv4();
       const response = await axios.post("/api/rooms", {
         username: "Host",
         uuid: roomId,
