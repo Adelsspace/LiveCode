@@ -1,4 +1,5 @@
 databaseChangeLog:
+- logicalFilePath: db/changelog/migrations/create_comments_migration.yaml
 - changeSet:
     id: 1746716187185-1
     author: misha (generated)
