@@ -1,5 +1,9 @@
 package ru.hh.blokshnote.service;
 
+import java.time.Duration;
+import java.time.Instant;
+import java.util.Optional;
+import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -16,11 +20,6 @@ import ru.hh.blokshnote.entity.User;
 import ru.hh.blokshnote.repository.RoomRepository;
 import ru.hh.blokshnote.repository.UserRepository;
 
-import java.time.Duration;
-import java.time.Instant;
-import java.util.Optional;
-import java.util.UUID;
-
 @Service
 public class RoomService {
 
@@ -30,10 +29,12 @@ public class RoomService {
 
   private final RoomRepository roomRepository;
   private final UserRepository userRepository;
+  private final RoomSecurityService roomSecurityService;
 
-  public RoomService(RoomRepository roomRepository, UserRepository userRepository) {
+  public RoomService(RoomRepository roomRepository, UserRepository userRepository, RoomSecurityService roomSecurityService) {
     this.roomRepository = roomRepository;
     this.userRepository = userRepository;
+    this.roomSecurityService = roomSecurityService;
   }
 
   @Transactional
@@ -83,11 +84,7 @@ public class RoomService {
   @Transactional
   public User addAdminToRoom(UUID roomUuid, UUID adminToken, CreateUserRequest request) {
     Room room = getRoomByUuid(roomUuid);
-    UUID roomAdminToken = room.getAdminToken();
-
-    if (!roomAdminToken.equals(adminToken)) {
-      throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Invalid admin token");
-    }
+    roomSecurityService.verifyAdminToken(room, adminToken);
 
     userRepository.findByNameAndRoom(request.getUsername(), room)
         .ifPresent(user -> {
