@@ -17,7 +17,7 @@ public class WebSocketConfig {
   @Value("${socketio.port}")
   private int port;
 
-  @Bean
+  @Bean(destroyMethod = "stop")
   public SocketIOServer socketIOServer(RoomSocketHandler handler) {
     Configuration config = new Configuration();
     config.setHostname(host);
