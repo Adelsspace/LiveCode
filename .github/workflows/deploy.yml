@@ -14,64 +14,64 @@ env:
   APP_FRONTEND: bloksh-frontend
 
 jobs:
-#  build-test-push:
-#    runs-on: ubuntu-22.04s
-#    steps:
-#      - uses: actions/checkout@v4
-#        with:
-#          ref: deploy
-#
-#      - name: Set up JDK 17
-#        uses: actions/setup-java@v4
-#        with:
-#          distribution: temurin
-#          java-version: 17
-#
-#      - name: Make Maven wrapper executable
-#        run: chmod +x backend/mvnw
-#
-#      - name: Run backend tests
-#        working-directory: backend
-#        run: ./mvnw test
-#
-#      - name: Set up Pack CLI
-#        uses: buildpacks/github-actions/setup-pack@v5.0.0
-#
-#      - name: Login to GitHub Container Registry
-#        uses: docker/login-action@v3
-#        with:
-#          registry: ghcr.io
-#          username: ${{ secrets.REGISTRY_USER }}
-#          password: ${{ secrets.REGISTRY_TOKEN }}
-#
-#      - name: Build & push backend image with Buildpacks
-#        run: |
-#          pack build ${{ env.REGISTRY }}/${{ env.APP_BACKEND }}:latest \
-#            --path ./backend \
-#            --builder paketobuildpacks/builder:base \
-#            --publish
-#
-#      - name: Set up Node.js
-#        uses: actions/setup-node@v4
-#        with:
-#          node-version: '22'
-#
-#      - name: Install & build frontend
-#        working-directory: frontend
-#        run: |
-#          npm ci
-#          npm run build
-#
-#      - name: Build & push frontend image
-#        uses: docker/build-push-action@v6
-#        with:
-#          context: frontend
-#          file: frontend/Dockerfile
-#          push: true
-#          tags: ${{ env.REGISTRY }}/${{ env.APP_FRONTEND }}:latest
+  build-test-push:
+    runs-on: ubuntu-22.04s
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: deploy
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Make Maven wrapper executable
+        run: chmod +x backend/mvnw
+
+      - name: Run backend tests
+        working-directory: backend
+        run: ./mvnw test
+
+      - name: Set up Pack CLI
+        uses: buildpacks/github-actions/setup-pack@v5.0.0
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ secrets.REGISTRY_USER }}
+          password: ${{ secrets.REGISTRY_TOKEN }}
+
+      - name: Build & push backend image with Buildpacks
+        run: |
+          pack build ${{ env.REGISTRY }}/${{ env.APP_BACKEND }}:latest \
+            --path ./backend \
+            --builder paketobuildpacks/builder:base \
+            --publish
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install & build frontend
+        working-directory: frontend
+        run: |
+          npm ci
+          npm run build
+
+      - name: Build & push frontend image
+        uses: docker/build-push-action@v6
+        with:
+          context: frontend
+          file: frontend/Dockerfile
+          push: true
+          tags: ${{ env.REGISTRY }}/${{ env.APP_FRONTEND }}:latest
 
   deploy:
-#    needs: build-test-push
+    needs: build-test-push
     runs-on: ubuntu-22.04
     if: github.ref == 'refs/heads/deploy'
     steps:
@@ -114,7 +114,7 @@ jobs:
           key: ${{ secrets.SERVER_SSH_KEY }}
           source: "./backend/src/main/resources/db/changelog"
           target: "~/bloksh"
-          strip_components: 5
+          strip_components: 6
 
       - name: Run remote docker-compose via ssh
         uses: appleboy/ssh-action@v1
