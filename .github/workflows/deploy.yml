@@ -106,7 +106,16 @@ jobs:
           source: "./docker-compose.prod.yml"
           target: "~/bloksh"
 
-      - name: remote docker-compose up via ssh
+      - name: Copy liquibase files to remote server
+        uses: appleboy/scp-action@v1
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          source: "./backend/src/main/resources/db/changelog"
+          target: "~/bloksh"
+
+      - name: Run remote docker-compose via ssh
         uses: appleboy/ssh-action@v1
         env:
           APPTOKEN: ${{ secrets.REGISTRY_TOKEN }}
