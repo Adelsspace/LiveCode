@@ -46,5 +46,21 @@ services:
       - code-backend
       - code-frontend
 
+  liquibase:
+    image: liquibase/liquibase:4.27
+    container_name: liquibase-cli
+    depends_on:
+      - postgres
+    volumes:
+      - ./migrations/changelog:/liquibase/changelog:ro
+    environment:
+      - LIQUIBASE_COMMAND_URL=jdbc:postgresql://postgres:5432/${POSTGRES_DB}
+      - LIQUIBASE_COMMAND_USERNAME=${POSTGRES_USER}
+      - LIQUIBASE_COMMAND_PASSWORD=${POSTGRES_PASSWORD}
+      - LIQUIBASE_COMMAND_CHANGELOG_FILE=db.changelog-master.yaml
+    working_dir: /liquibase/changelog
+    networks:
+      - internal
+
 volumes:
   pgdata:
