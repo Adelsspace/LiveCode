@@ -59,8 +59,6 @@ services:
       - LIQUIBASE_COMMAND_PASSWORD=${POSTGRES_PASSWORD}
       - LIQUIBASE_COMMAND_CHANGELOG_FILE=db.changelog-master.yaml
     working_dir: /liquibase/changelog
-    networks:
-      - internal
 
 volumes:
   pgdata:
