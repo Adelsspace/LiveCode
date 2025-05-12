@@ -114,7 +114,7 @@ jobs:
           key: ${{ secrets.SERVER_SSH_KEY }}
           source: "./backend/src/main/resources/db/changelog"
           target: "~/bloksh"
-          strip_components: 5
+          strip_components: 6
 
       - name: Run remote docker-compose via ssh
         uses: appleboy/ssh-action@v1
