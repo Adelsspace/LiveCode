@@ -27,7 +27,7 @@ public class CommentController {
       @PathVariable("uuid") UUID roomUuid,
       @RequestParam("adminToken") UUID adminToken,
       @RequestBody CreateCommentDto request
-      ) {
+  ) {
     return commentService.createComment(roomUuid, adminToken, request);
   }
 

@@ -19,6 +19,7 @@ import ru.hh.blokshnote.entity.Room;
 import ru.hh.blokshnote.entity.User;
 import ru.hh.blokshnote.repository.RoomRepository;
 import ru.hh.blokshnote.repository.UserRepository;
+import ru.hh.blokshnote.utility.security.RoomSecurityUtils;
 
 @Service
 public class RoomService {
@@ -29,12 +30,10 @@ public class RoomService {
 
   private final RoomRepository roomRepository;
   private final UserRepository userRepository;
-  private final RoomSecurityService roomSecurityService;
 
-  public RoomService(RoomRepository roomRepository, UserRepository userRepository, RoomSecurityService roomSecurityService) {
+  public RoomService(RoomRepository roomRepository, UserRepository userRepository) {
     this.roomRepository = roomRepository;
     this.userRepository = userRepository;
-    this.roomSecurityService = roomSecurityService;
   }
 
   @Transactional
@@ -84,7 +83,7 @@ public class RoomService {
   @Transactional
   public User addAdminToRoom(UUID roomUuid, UUID adminToken, CreateUserRequest request) {
     Room room = getRoomByUuid(roomUuid);
-    roomSecurityService.verifyAdminToken(room, adminToken);
+    RoomSecurityUtils.verifyAdminToken(room, adminToken);
 
     userRepository.findByNameAndRoom(request.getUsername(), room)
         .ifPresent(user -> {
