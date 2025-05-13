@@ -3,3 +3,6 @@ databaseChangeLog:
   - include:
       file: migrations/init.yaml
       relativeToChangelogFile: true
+  - include:
+      file: migrations/20250513192231-outputChangeLog.yaml
+      relativeToChangelogFile: true
