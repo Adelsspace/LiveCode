@@ -3,3 +3,6 @@ databaseChangeLog:
   - include:
       file: migrations/init.yaml
       relativeToChangelogFile: true
+  - include:
+      file: migrations/create_comments_migration.yaml
+      relativeToChangelogFile: true
