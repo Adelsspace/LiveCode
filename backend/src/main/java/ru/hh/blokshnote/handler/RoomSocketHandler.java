@@ -3,31 +3,32 @@ package ru.hh.blokshnote.handler;
 import com.corundumstudio.socketio.AckRequest;
 import com.corundumstudio.socketio.SocketIOClient;
 import com.corundumstudio.socketio.SocketIONamespace;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
-import ru.hh.blokshnote.dto.room.request.RoomStateMessageDto;
-import ru.hh.blokshnote.dto.room.response.RoomStateDto;
 import ru.hh.blokshnote.dto.websocket.CursorPositionDto;
+import ru.hh.blokshnote.dto.websocket.EditorStateDto;
 import ru.hh.blokshnote.dto.websocket.LanguageChangeDto;
 import ru.hh.blokshnote.dto.websocket.TextSelectionDto;
 import ru.hh.blokshnote.dto.websocket.TextUpdateDto;
 import ru.hh.blokshnote.dto.websocket.UserActivityDto;
+import ru.hh.blokshnote.dto.websocket.UserState;
+import ru.hh.blokshnote.dto.websocket.UsersUpdateDto;
 import ru.hh.blokshnote.entity.Room;
+import ru.hh.blokshnote.entity.User;
 import ru.hh.blokshnote.service.RoomService;
 
-import java.util.Set;
+import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static ru.hh.blokshnote.utility.WsMessageType.CURSOR_POSITION;
+import static ru.hh.blokshnote.utility.WsMessageType.EDITOR_STATE_UPDATE;
 import static ru.hh.blokshnote.utility.WsMessageType.LANGUAGE_CHANGE;
-import static ru.hh.blokshnote.utility.WsMessageType.NEW_ROOM_STATE;
-import static ru.hh.blokshnote.utility.WsMessageType.ROOM_STATE_UPDATE;
+import static ru.hh.blokshnote.utility.WsMessageType.NEW_EDITOR_STATE;
 import static ru.hh.blokshnote.utility.WsMessageType.TEXT_SELECTION;
 import static ru.hh.blokshnote.utility.WsMessageType.TEXT_UPDATE;
+import static ru.hh.blokshnote.utility.WsMessageType.USERS_UPDATE;
 import static ru.hh.blokshnote.utility.WsMessageType.USER_ACTIVITY;
 import static ru.hh.blokshnote.utility.WsPathParam.ROOM_UUID;
 import static ru.hh.blokshnote.utility.WsPathParam.USER;
@@ -36,32 +37,40 @@ import static ru.hh.blokshnote.utility.WsPathParam.USER;
 public class RoomSocketHandler {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(RoomSocketHandler.class);
+  private final String USER_STATE_KEY = "USER_STATE";
   private final RoomService roomService;
-  private final ObjectMapper objectMapper;
+
 
   public RoomSocketHandler(RoomService roomService) {
     this.roomService = roomService;
-    this.objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
   }
 
   public void registerListeners(SocketIONamespace namespace) {
     namespace.addConnectListener(client -> {
-      String roomUuid = client.getHandshakeData().getSingleUrlParam(ROOM_UUID.getLabel());
-      client.joinRoom(roomUuid);
-      Room room = roomService.getRoomByUuid(UUID.fromString(roomUuid));
-      broadcastRoomState(namespace, room);
+      String roomUuidString = client.getHandshakeData().getSingleUrlParam(ROOM_UUID.getLabel());
+      UUID roomUuid = UUID.fromString(roomUuidString);
+      String userName = client.getHandshakeData().getSingleUrlParam(USER.getLabel());
+      LOGGER.info("User with name={} requested connection to room with UUID={}", userName, roomUuidString);
+      User user = roomService.getUser(roomUuid, userName);
+      client.set(USER_STATE_KEY, new UserState(userName, true, user.isAdmin()));
+      client.joinRoom(roomUuidString);
+
+      sendEditorState(client, roomUuid);
+      broadcastRoomUsers(namespace, roomUuidString);
+      LOGGER.info("User with name={} connected to room with UUID={}", userName, roomUuidString);
     });
 
     namespace.addDisconnectListener(client -> {
-      String roomUuid = client.getHandshakeData().getSingleUrlParam(ROOM_UUID.getLabel());
-      Room room = roomService.getRoomByUuid(UUID.fromString(roomUuid));
-      broadcastRoomState(namespace, room);
+      String roomUuidString = client.getHandshakeData().getSingleUrlParam(ROOM_UUID.getLabel());
+      broadcastRoomUsers(namespace, roomUuidString);
     });
 
-    namespace.addEventListener(NEW_ROOM_STATE.name(), RoomStateMessageDto.class, (client, data, ackSender) -> {
+    namespace.addEventListener(NEW_EDITOR_STATE.name(), EditorStateDto.class, (client, data, ackSender) -> {
       String roomUuid = client.getHandshakeData().getSingleUrlParam(ROOM_UUID.getLabel());
-      Room room = roomService.updateEditorText(UUID.fromString(roomUuid), data);
-      broadcastRoomState(namespace, room);
+      LOGGER.info("Updating editor text={} and language={} in room with UUID={}",
+          data.getText(), data.getLanguage(), roomUuid);
+      Room room = roomService.updateRoomEditor(UUID.fromString(roomUuid), data);
+      broadcastEditorState(namespace, room);
     });
 
     namespace.addEventListener(TEXT_SELECTION.name(), TextSelectionDto.class, this::textSelectionEventHandler);
@@ -71,45 +80,78 @@ public class RoomSocketHandler {
     namespace.addEventListener(TEXT_UPDATE.name(), TextUpdateDto.class, this::textUpdateEventHandler);
   }
 
-  private void broadcastRoomState(SocketIONamespace namespace, Room room) {
+  private void sendEditorState(SocketIOClient client, UUID roomUuid) {
+    Room room = roomService.getRoomByUuid(roomUuid);
+
+    EditorStateDto dto = new EditorStateDto();
+    dto.setText(room.getEditorText());
+    dto.setLanguage(room.getEditorLanguage());
+    client.sendEvent(EDITOR_STATE_UPDATE.name(), dto);
+  }
+
+  private void broadcastRoomUsers(SocketIONamespace namespace, String roomUuid) {
+    List<UserState> users = namespace.getRoomOperations(roomUuid).getClients().stream()
+        .map(client -> (UserState) client.get(USER_STATE_KEY))
+        .toList();
+    LOGGER.info("Users={} now in room with UUID={}",
+        users.stream()
+            .map(UserState::getUsername)
+            .collect(Collectors.toSet()),
+        roomUuid);
+    namespace.getRoomOperations(roomUuid).sendEvent(USERS_UPDATE.name(), new UsersUpdateDto(users));
+  }
+
+  private void broadcastEditorState(SocketIONamespace namespace, Room room) {
     String roomUuid = room.getRoomUuid().toString();
-    Set<String> users = namespace.getRoomOperations(roomUuid).getClients().stream()
-        .map(client -> client.getHandshakeData().getSingleUrlParam(USER.getLabel()))
-        .collect(Collectors.toSet());
-
-    RoomStateDto dto = new RoomStateDto();
-    dto.setEditorText(room.getEditorText());
-    dto.setUsers(users);
-
-    namespace.getRoomOperations(roomUuid).sendEvent(ROOM_STATE_UPDATE.name(), dto);
+    EditorStateDto dto = new EditorStateDto();
+    dto.setText(room.getEditorText());
+    dto.setLanguage(room.getEditorLanguage());
+    namespace.getRoomOperations(roomUuid).sendEvent(EDITOR_STATE_UPDATE.name(), dto);
   }
 
   private void textSelectionEventHandler(SocketIOClient client, TextSelectionDto data, AckRequest ackSender) {
     String roomUuid = client.getHandshakeData().getSingleUrlParam(ROOM_UUID.getLabel());
+    LOGGER.info("In room with UUID={} user={} highlighted text", roomUuid, data.getUsername());
     SocketIONamespace namespace = client.getNamespace();
     namespace.getRoomOperations(roomUuid).sendEvent(TEXT_SELECTION.name(), data);
   }
 
   private void cursorPositionEventHandler(SocketIOClient client, CursorPositionDto data, AckRequest ackSender) {
     String roomUuid = client.getHandshakeData().getSingleUrlParam(ROOM_UUID.getLabel());
+    LOGGER.info("In room with UUID={} user={} moved cursor", roomUuid, data.getUsername());
     SocketIONamespace namespace = client.getNamespace();
     namespace.getRoomOperations(roomUuid).sendEvent(CURSOR_POSITION.name(), data);
   }
 
   private void userActivityEventHandler(SocketIOClient client, UserActivityDto data, AckRequest ackSender) {
     String roomUuid = client.getHandshakeData().getSingleUrlParam(ROOM_UUID.getLabel());
+    UserState userState = client.get(USER_STATE_KEY);
+    if (userState == null) {
+      String userName = client.getHandshakeData().getSingleUrlParam(USER.getLabel());
+      User user = roomService.getUser(UUID.fromString(roomUuid), userName);
+      userState = new UserState();
+      userState.setUsername(userName);
+      userState.setAdmin(user.isAdmin());
+    }
+    userState.setActive(data.isActive());
+    client.set(USER_STATE_KEY, userState);
+    LOGGER.info("In room with UUID={} user={} now {}", roomUuid, data.getUsername(),
+        data.isActive() ? "active" : "inactive");
     SocketIONamespace namespace = client.getNamespace();
     namespace.getRoomOperations(roomUuid).sendEvent(USER_ACTIVITY.name(), data);
   }
 
   private void languageChangeEventHandler(SocketIOClient client, LanguageChangeDto data, AckRequest ackSender) {
     String roomUuid = client.getHandshakeData().getSingleUrlParam(ROOM_UUID.getLabel());
+    roomService.updateRoomEditorLanguage(UUID.fromString(roomUuid), data.getLanguage());
+    LOGGER.info("In room with UUID={} user={} changed language to {}", roomUuid, data.getUsername(), data.getLanguage());
     SocketIONamespace namespace = client.getNamespace();
     namespace.getRoomOperations(roomUuid).sendEvent(LANGUAGE_CHANGE.name(), data);
   }
 
   private void textUpdateEventHandler(SocketIOClient client, TextUpdateDto data, AckRequest ackSender) {
     String roomUuid = client.getHandshakeData().getSingleUrlParam(ROOM_UUID.getLabel());
+    LOGGER.info("In room with UUID={} user={} updated text", roomUuid, data.getUsername());
     SocketIONamespace namespace = client.getNamespace();
     namespace.getRoomOperations(roomUuid).sendEvent(TEXT_UPDATE.name(), data);
   }

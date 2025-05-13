@@ -6,6 +6,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+
 import java.time.Instant;
 import java.util.UUID;
 
@@ -31,6 +32,9 @@ public class Room {
 
   @Column(name = "editor_text", nullable = false)
   private String editorText;
+
+  @Column(name = "editor_language")
+  private String editorLanguage;
 
 
   public Room() {
@@ -78,5 +82,13 @@ public class Room {
 
   public void setEditorText(String editorText) {
     this.editorText = editorText;
+  }
+
+  public String getEditorLanguage() {
+    return editorLanguage;
+  }
+
+  public void setEditorLanguage(String editorLanguage) {
+    this.editorLanguage = editorLanguage;
   }
 }

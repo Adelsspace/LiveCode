@@ -9,9 +9,9 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 import ru.hh.blokshnote.config.WebSocketConfig;
 import ru.hh.blokshnote.dto.room.request.CreateRoomRequest;
-import ru.hh.blokshnote.dto.room.request.RoomStateMessageDto;
 import ru.hh.blokshnote.dto.room.response.WebSocketUrlDto;
 import ru.hh.blokshnote.dto.user.request.CreateUserRequest;
+import ru.hh.blokshnote.dto.websocket.EditorStateDto;
 import ru.hh.blokshnote.entity.Room;
 import ru.hh.blokshnote.entity.User;
 import ru.hh.blokshnote.repository.RoomRepository;
@@ -125,13 +125,35 @@ public class RoomService {
   }
 
   @Transactional
-  public Room updateEditorText(UUID roomUuid, RoomStateMessageDto messageDto) {
+  public Room updateRoomEditor(UUID roomUuid, EditorStateDto messageDto) {
     Room room = roomRepository.findByRoomUuid(roomUuid)
         .orElseThrow(() -> {
           LOGGER.info("Room with UUID={} not found", roomUuid);
           return new ResponseStatusException(HttpStatus.NOT_FOUND, String.format("Room with UUID=%s not found", roomUuid));
         });
-    room.setEditorText(messageDto.getEditorText());
+    room.setEditorText(messageDto.getText());
+    room.setEditorLanguage(messageDto.getLanguage());
     return roomRepository.save(room);
+  }
+
+  @Transactional
+  public void updateRoomEditorLanguage(UUID roomUuid, String language) {
+    Room room = roomRepository.findByRoomUuid(roomUuid)
+        .orElseThrow(() -> {
+          LOGGER.info("Room with UUID={} not found", roomUuid);
+          return new ResponseStatusException(HttpStatus.NOT_FOUND, String.format("Room with UUID=%s not found", roomUuid));
+        });
+    room.setEditorLanguage(language);
+    roomRepository.save(room);
+  }
+
+  @Transactional(readOnly = true)
+  public User getUser(UUID roomUuid, String userName) {
+    return userRepository.findByNameAndRoomRoomUuid(userName, roomUuid)
+        .orElseThrow(() -> {
+          LOGGER.info("User with name={} in Room with UUID={} not found", userName, roomUuid);
+          return new ResponseStatusException(HttpStatus.NOT_FOUND,
+              "User with name=%s in Room with UUID=%s not found".formatted(userName, roomUuid));
+        });
   }
 }

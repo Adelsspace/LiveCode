@@ -6,6 +6,7 @@ import com.corundumstudio.socketio.SocketIOServer;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import ru.hh.blokshnote.handler.RoomSocketHandler;
+import ru.hh.blokshnote.utility.WsPathParam;
 
 @org.springframework.context.annotation.Configuration
 public class WebSocketConfig {
@@ -23,7 +24,9 @@ public class WebSocketConfig {
     config.setHostname(host);
     config.setPort(port);
     config.setAuthorizationListener(data -> {
-          if (data.getSingleUrlParam("user") != null && data.getSingleUrlParam("roomUuid") != null) {
+          if (data.getSingleUrlParam(WsPathParam.USER.getLabel()) != null
+              && data.getSingleUrlParam(WsPathParam.ROOM_UUID.getLabel()) != null
+          ) {
             return AuthorizationResult.SUCCESSFUL_AUTHORIZATION;
           }
           return AuthorizationResult.FAILED_AUTHORIZATION;
