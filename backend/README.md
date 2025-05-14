@@ -56,29 +56,106 @@ docker-compose up -d --build
 }
 ```
 Для подключения и обмена сообщениями ссылка должна содержать параметры "user" и "roomUuid", в которых передаются имя пользователя и UUID комнаты.
-Для передачи в сообщении состояния комнаты ссылка должна содержать параметр "message_type=NEW_ROOM_STATE".
 Пример ссылки:
 
 ```
-ws://localhost:8080/ws/room/connect?user=John&roomUuid=82cf90c2-b024-4ad1-899a-ab929849df03&message_type=NEW_ROOM_STATE
+ws://localhost:8080/ws/room/connect?user=John&roomUuid=82cf90c2-b024-4ad1-899a-ab929849df03
 ```
+### События
 
-Пример тела сообщения:
+- `NEW_EDITOR_STATE`  
+  Пример тела сообщения:
 ```json
 {
-  "editorText": "public static"
+  "text": "public static",
+  "language": "Java"
 }
 ```
-При подключении или отключении пользователя и приёме сообщения всем пользователям комнаты рассылается текущее состояние комнаты в виде:
+- `TEXT_SELECTION`  
+  Пример тела сообщения:
 ```json
 {
-  "editorText": "public static",
+  "selection": {
+    "startLineNumber": 5,
+    "startColumn": 3,
+    "endLineNumber": 7,
+    "endColumn": 12
+  },
+  "username": "John"
+}
+```
+
+- `CURSOR_POSITION`  
+  Пример тела сообщения:
+```json
+{
+  "position": {
+    "lineNumber": 5,
+    "column": 15
+  },
+  "username": "John"
+}
+```
+
+- `USER_ACTIVITY`  
+  Пример тела сообщения:
+```json
+{
+  "isActive": false,
+  "username": "John"
+}
+```
+
+- `LANGUAGE_CHANGE`  
+  Пример тела сообщения:
+```json
+{
+  "language": "typescript",
+  "username": "John"
+}
+```
+- `TEXT_UPDATE`  
+  Пример тела сообщения:
+```json
+{
+  "changes": [
+    {
+      "range": {
+        "startLineNumber": 3,
+        "startColumn": 1,
+        "endLineNumber": 3,
+        "endColumn": 5
+      },
+      "text": "hello world",
+      "forceMoveMarkers": false,
+      "version": 2
+    }
+  ],
+  "username": "John"
+}
+```
+
+- `USERS_UPDATE`  
+  Пример тела сообщения:
+```json
+{
   "users": [
-    "John",
-    "Jane"
+    {
+      "username": "John",
+      "isActive": true,
+      "isAdmin": true
+    },
+    {
+      "username": "Jane",
+      "isActive": true,
+      "isAdmin": false
+    }
   ]
 }
 ```
+
+При подключении пользователя, ему отправляется событие `NEW_EDITOR_STATE` и всем пользователям комнаты рассылается событие `USERS_UPDATE`.
+При отключении пользователя всем пользователям комнаты рассылается событие `USERS_UPDATE`.
 
 ## Создание и управление миграциями
 

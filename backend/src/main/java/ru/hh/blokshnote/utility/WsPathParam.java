@@ -3,7 +3,7 @@ package ru.hh.blokshnote.utility;
 public enum WsPathParam {
   USER("user"),
   ROOM_UUID("roomUuid"),
-  MESSAGE_TYPE("message_type");
+  ;
 
   private final String label;
 

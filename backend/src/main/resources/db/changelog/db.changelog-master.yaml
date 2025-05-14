@@ -6,3 +6,6 @@ databaseChangeLog:
   - include:
       file: migrations/create_comments_migration.yaml
       relativeToChangelogFile: true
+  - include:
+      file: migrations/20250513192231-outputChangeLog.yaml
+      relativeToChangelogFile: true

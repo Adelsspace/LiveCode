@@ -6,15 +6,16 @@ import java.util.Optional;
 import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 import ru.hh.blokshnote.config.WebSocketConfig;
 import ru.hh.blokshnote.dto.room.request.CreateRoomRequest;
-import ru.hh.blokshnote.dto.room.request.RoomStateMessageDto;
 import ru.hh.blokshnote.dto.room.response.WebSocketUrlDto;
 import ru.hh.blokshnote.dto.user.request.CreateUserRequest;
+import ru.hh.blokshnote.dto.websocket.EditorStateDto;
 import ru.hh.blokshnote.entity.Room;
 import ru.hh.blokshnote.entity.User;
 import ru.hh.blokshnote.repository.RoomRepository;
@@ -27,6 +28,10 @@ public class RoomService {
   private static final Logger LOGGER = LoggerFactory.getLogger(RoomService.class);
 
   private static final Duration ROOM_TIME_TO_LIVE = Duration.ofHours(3);
+  @Value("${socketio.host}")
+  private String serverHost;
+  @Value("${socketio.port}")
+  private int serverPort;
 
   private final RoomRepository roomRepository;
   private final UserRepository userRepository;
@@ -106,24 +111,45 @@ public class RoomService {
   }
 
   @Transactional(readOnly = true)
-  public WebSocketUrlDto getRoomUrl(UUID roomUuid, String serverHost, int serverPort, String scheme) {
+  public WebSocketUrlDto getRoomUrl(UUID roomUuid) {
     roomRepository.findByRoomUuid(roomUuid)
         .orElseThrow(() -> {
           LOGGER.info("Room with UUID={} not found", roomUuid);
           return new ResponseStatusException(HttpStatus.NOT_FOUND, String.format("Room with UUID=%s not found", roomUuid));
         });
-    String wsScheme = "https".equals(scheme) ? "wss" : "ws";
-    return new WebSocketUrlDto(String.format("%s://%s:%d%s", wsScheme, serverHost, serverPort, WebSocketConfig.ROOM_URI_TEMPLATE));
+    return new WebSocketUrlDto(String.format("ws://%s:%d%s", serverHost, serverPort, WebSocketConfig.ROOM_URI_TEMPLATE));
   }
 
   @Transactional
-  public Room updateEditorText(UUID roomUuid, RoomStateMessageDto messageDto) {
+  public Room updateRoomEditor(UUID roomUuid, EditorStateDto messageDto) {
     Room room = roomRepository.findByRoomUuid(roomUuid)
         .orElseThrow(() -> {
           LOGGER.info("Room with UUID={} not found", roomUuid);
           return new ResponseStatusException(HttpStatus.NOT_FOUND, String.format("Room with UUID=%s not found", roomUuid));
         });
-    room.setEditorText(messageDto.getEditorText());
+    room.setEditorText(messageDto.getText());
+    room.setEditorLanguage(messageDto.getLanguage());
     return roomRepository.save(room);
+  }
+
+  @Transactional
+  public void updateRoomEditorLanguage(UUID roomUuid, String language) {
+    Room room = roomRepository.findByRoomUuid(roomUuid)
+        .orElseThrow(() -> {
+          LOGGER.info("Room with UUID={} not found", roomUuid);
+          return new ResponseStatusException(HttpStatus.NOT_FOUND, String.format("Room with UUID=%s not found", roomUuid));
+        });
+    room.setEditorLanguage(language);
+    roomRepository.save(room);
+  }
+
+  @Transactional(readOnly = true)
+  public User getUser(UUID roomUuid, String userName) {
+    return userRepository.findByNameAndRoomRoomUuid(userName, roomUuid)
+        .orElseThrow(() -> {
+          LOGGER.info("User with name={} in Room with UUID={} not found", userName, roomUuid);
+          return new ResponseStatusException(HttpStatus.NOT_FOUND,
+              "User with name=%s in Room with UUID=%s not found".formatted(userName, roomUuid));
+        });
   }
 }
