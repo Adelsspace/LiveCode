@@ -1,17 +1,17 @@
 package ru.hh.blokshnote.dto.websocket;
 
-public class UserState {
+public class UserStateDto {
   private String username;
   private boolean isActive;
   private boolean isAdmin;
 
-  public UserState(String username, boolean isActive, boolean isAdmin) {
+  public UserStateDto(String username, boolean isActive, boolean isAdmin) {
     this.username = username;
     this.isActive = isActive;
     this.isAdmin = isAdmin;
   }
 
-  public UserState() {
+  public UserStateDto() {
   }
 
   public String getUsername() {

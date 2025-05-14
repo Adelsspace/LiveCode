@@ -38,4 +38,3 @@ public class WebSocketConfig {
     return server;
   }
 }
-

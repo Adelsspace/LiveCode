@@ -1,14 +1,14 @@
 package ru.hh.blokshnote.dto.websocket;
 
 public class TextSelectionDto {
-  private Selection selection;
+  private SelectionDto selection;
   private String username;
 
-  public Selection getSelection() {
+  public SelectionDto getSelection() {
     return selection;
   }
 
-  public void setSelection(Selection selection) {
+  public void setSelection(SelectionDto selection) {
     this.selection = selection;
   }
 

@@ -12,7 +12,7 @@ import ru.hh.blokshnote.dto.websocket.LanguageChangeDto;
 import ru.hh.blokshnote.dto.websocket.TextSelectionDto;
 import ru.hh.blokshnote.dto.websocket.TextUpdateDto;
 import ru.hh.blokshnote.dto.websocket.UserActivityDto;
-import ru.hh.blokshnote.dto.websocket.UserState;
+import ru.hh.blokshnote.dto.websocket.UserStateDto;
 import ru.hh.blokshnote.dto.websocket.UsersUpdateDto;
 import ru.hh.blokshnote.entity.Room;
 import ru.hh.blokshnote.entity.User;
@@ -23,7 +23,6 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static ru.hh.blokshnote.utility.WsMessageType.CURSOR_POSITION;
-import static ru.hh.blokshnote.utility.WsMessageType.EDITOR_STATE_UPDATE;
 import static ru.hh.blokshnote.utility.WsMessageType.LANGUAGE_CHANGE;
 import static ru.hh.blokshnote.utility.WsMessageType.NEW_EDITOR_STATE;
 import static ru.hh.blokshnote.utility.WsMessageType.TEXT_SELECTION;
@@ -52,7 +51,7 @@ public class RoomSocketHandler {
       String userName = client.getHandshakeData().getSingleUrlParam(USER.getLabel());
       LOGGER.info("User with name={} requested connection to room with UUID={}", userName, roomUuidString);
       User user = roomService.getUser(roomUuid, userName);
-      client.set(USER_STATE_KEY, new UserState(userName, true, user.isAdmin()));
+      client.set(USER_STATE_KEY, new UserStateDto(userName, true, user.isAdmin()));
       client.joinRoom(roomUuidString);
 
       sendEditorState(client, roomUuid);
@@ -86,16 +85,16 @@ public class RoomSocketHandler {
     EditorStateDto dto = new EditorStateDto();
     dto.setText(room.getEditorText());
     dto.setLanguage(room.getEditorLanguage());
-    client.sendEvent(EDITOR_STATE_UPDATE.name(), dto);
+    client.sendEvent(NEW_EDITOR_STATE.name(), dto);
   }
 
   private void broadcastRoomUsers(SocketIONamespace namespace, String roomUuid) {
-    List<UserState> users = namespace.getRoomOperations(roomUuid).getClients().stream()
-        .map(client -> (UserState) client.get(USER_STATE_KEY))
+    List<UserStateDto> users = namespace.getRoomOperations(roomUuid).getClients().stream()
+        .map(client -> (UserStateDto) client.get(USER_STATE_KEY))
         .toList();
     LOGGER.info("Users={} now in room with UUID={}",
         users.stream()
-            .map(UserState::getUsername)
+            .map(UserStateDto::getUsername)
             .collect(Collectors.toSet()),
         roomUuid);
     namespace.getRoomOperations(roomUuid).sendEvent(USERS_UPDATE.name(), new UsersUpdateDto(users));
@@ -106,7 +105,7 @@ public class RoomSocketHandler {
     EditorStateDto dto = new EditorStateDto();
     dto.setText(room.getEditorText());
     dto.setLanguage(room.getEditorLanguage());
-    namespace.getRoomOperations(roomUuid).sendEvent(EDITOR_STATE_UPDATE.name(), dto);
+    namespace.getRoomOperations(roomUuid).sendEvent(NEW_EDITOR_STATE.name(), dto);
   }
 
   private void textSelectionEventHandler(SocketIOClient client, TextSelectionDto data, AckRequest ackSender) {
@@ -125,11 +124,11 @@ public class RoomSocketHandler {
 
   private void userActivityEventHandler(SocketIOClient client, UserActivityDto data, AckRequest ackSender) {
     String roomUuid = client.getHandshakeData().getSingleUrlParam(ROOM_UUID.getLabel());
-    UserState userState = client.get(USER_STATE_KEY);
+    UserStateDto userState = client.get(USER_STATE_KEY);
     if (userState == null) {
       String userName = client.getHandshakeData().getSingleUrlParam(USER.getLabel());
       User user = roomService.getUser(UUID.fromString(roomUuid), userName);
-      userState = new UserState();
+      userState = new UserStateDto();
       userState.setUsername(userName);
       userState.setAdmin(user.isAdmin());
     }

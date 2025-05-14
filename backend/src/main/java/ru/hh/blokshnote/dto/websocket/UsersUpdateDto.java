@@ -3,20 +3,20 @@ package ru.hh.blokshnote.dto.websocket;
 import java.util.List;
 
 public class UsersUpdateDto {
-    private List<UserState> users;
+  private List<UserStateDto> usersStates;
 
-    public UsersUpdateDto() {
-    }
+  public UsersUpdateDto() {
+  }
 
-    public UsersUpdateDto(List<UserState> users) {
-        this.users = users;
-    }
+  public UsersUpdateDto(List<UserStateDto> usersStates) {
+    this.usersStates = usersStates;
+  }
 
-    public List<UserState> getUsers() {
-        return users;
-    }
+  public List<UserStateDto> getUsersStates() {
+    return usersStates;
+  }
 
-    public void setUsers(List<UserState> users) {
-        this.users = users;
-    }
+  public void setUsersStates(List<UserStateDto> usersStates) {
+    this.usersStates = usersStates;
+  }
 }
