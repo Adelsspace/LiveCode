@@ -4,41 +4,41 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.hh.blokshnote.dto.comment.response.CommentDto;
 import ru.hh.blokshnote.dto.review.request.CreateReviewDto;
-import ru.hh.blokshnote.entity.Comment;
 import ru.hh.blokshnote.entity.Room;
-import ru.hh.blokshnote.repository.CommentRepository;
 import ru.hh.blokshnote.utility.security.RoomSecurityUtils;
 
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
 @Service
 public class ReviewService {
-  private final CommentRepository commentRepository;
+  private final CommentService commentService;
   private final RoomService roomService;
   private final LlmService llmService;
 
   public ReviewService(
-      CommentRepository commentRepository,
+      CommentService commentService,
       RoomService roomService,
       LlmService llmService
   ) {
-    this.commentRepository = commentRepository;
+    this.commentService = commentService;
     this.roomService = roomService;
     this.llmService = llmService;
   }
 
   @Transactional
-  public CommentDto createReview(UUID roomUuid, UUID adminToken, CreateReviewDto request) {
+  public CompletableFuture<CommentDto> createReviewAsync(UUID roomUuid, UUID adminToken, CreateReviewDto request) {
     Room room = roomService.getRoomByUuid(roomUuid);
     RoomSecurityUtils.verifyAdminToken(room, adminToken);
 
-    String editorText = request.editorText();
-    String prompt = request.prompt();
+    String editorText = room.getEditorText();
+    String prompt = request.prompt().strip();
 
-    String content = llmService.getReviewResponse(editorText, prompt);
+    if (prompt.isEmpty()) {
+      prompt = "Проверь код на наличие ошибок";
+    }
 
-    Comment comment = new Comment(content, room, null, true);
-    commentRepository.save(comment);
-    return CommentDto.fromEntity(comment);
+    return llmService.getReviewResponseAsync(editorText, prompt)
+        .thenApply(content -> commentService.createReviewComment(room, content));
   }
 }

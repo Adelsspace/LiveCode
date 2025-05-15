@@ -35,6 +35,8 @@ databaseChangeLog:
             name: room_id
             type: BIGINT
         - column:
+            constraints:
+              nullable: false
             name: user_id
             type: BIGINT
         tableName: comments

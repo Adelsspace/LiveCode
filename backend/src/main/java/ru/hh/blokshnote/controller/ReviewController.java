@@ -12,6 +12,7 @@ import ru.hh.blokshnote.dto.review.request.CreateReviewDto;
 import ru.hh.blokshnote.service.ReviewService;
 
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
 @RestController
 @RequestMapping("/api/rooms")
@@ -23,11 +24,11 @@ public class ReviewController {
   }
 
   @PostMapping("/{uuid}/review")
-  public CommentDto createReview(
+  public CompletableFuture<CommentDto> createReviewAsync(
       @PathVariable("uuid") UUID roomUuid,
       @RequestParam("adminToken") UUID adminToken,
       @RequestBody CreateReviewDto request
   ) {
-    return reviewService.createReview(roomUuid, adminToken, request);
+    return reviewService.createReviewAsync(roomUuid, adminToken, request);
   }
 }

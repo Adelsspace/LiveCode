@@ -57,4 +57,11 @@ public class CommentService {
     List<CommentDto> comments = commentList.stream().map(CommentDto::fromEntity).toList();
     return new RoomCommentsResponse(comments);
   }
+
+  @Transactional
+  public CommentDto createReviewComment(Room room, String content) {
+    Comment comment = new Comment(content, room, null, true);
+    commentRepository.save(comment);
+    return CommentDto.fromEntity(comment);
+  }
 }
