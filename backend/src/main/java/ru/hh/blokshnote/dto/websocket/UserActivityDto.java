@@ -1,9 +1,12 @@
 package ru.hh.blokshnote.dto.websocket;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 public class UserActivityDto {
   private boolean isActive;
   private String username;
 
+  @JsonProperty(value="isActive")
   public boolean isActive() {
     return isActive;
   }

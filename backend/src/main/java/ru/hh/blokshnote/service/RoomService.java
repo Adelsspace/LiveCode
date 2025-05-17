@@ -28,7 +28,7 @@ public class RoomService {
   private static final Logger LOGGER = LoggerFactory.getLogger(RoomService.class);
 
   private static final Duration ROOM_TIME_TO_LIVE = Duration.ofHours(3);
-  @Value("${socketio.host}")
+  @Value("${socketio.host-frontend}")
   private String serverHost;
   @Value("${socketio.port}")
   private int serverPort;

@@ -139,7 +139,7 @@ ws://localhost:8080/ws/room/connect?user=John&roomUuid=82cf90c2-b024-4ad1-899a-a
   Пример тела сообщения:
 ```json
 {
-  "users": [
+  "usersStates": [
     {
       "username": "John",
       "isActive": true,
