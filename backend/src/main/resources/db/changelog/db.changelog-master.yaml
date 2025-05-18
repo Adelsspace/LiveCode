@@ -9,3 +9,6 @@ databaseChangeLog:
   - include:
       file: migrations/add_color_to_user.yaml
       relativeToChangelogFile: true
+  - include:
+      file: migrations/20250513192231-outputChangeLog.yaml
+      relativeToChangelogFile: true

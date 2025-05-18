@@ -1,5 +1,11 @@
 package ru.hh.blokshnote.utility;
 
 public enum WsMessageType {
-  NEW_ROOM_STATE;
+  NEW_EDITOR_STATE,
+  TEXT_SELECTION,
+  CURSOR_POSITION,
+  USER_ACTIVITY,
+  LANGUAGE_CHANGE,
+  TEXT_UPDATE,
+  USERS_UPDATE,
 }
