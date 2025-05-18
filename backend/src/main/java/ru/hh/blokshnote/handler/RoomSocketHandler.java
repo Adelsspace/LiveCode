@@ -51,7 +51,7 @@ public class RoomSocketHandler {
       String userName = client.getHandshakeData().getSingleUrlParam(USER.getLabel());
       LOGGER.info("User with name={} requested connection to room with UUID={}", userName, roomUuidString);
       User user = roomService.getUser(roomUuid, userName);
-      client.set(USER_STATE_KEY, new UserStateDto(userName, true, user.isAdmin()));
+      client.set(USER_STATE_KEY, new UserStateDto(userName, true, user.isAdmin(), user.getUserColor()));
       client.joinRoom(roomUuidString);
 
       sendEditorState(client, roomUuid);
