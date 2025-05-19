@@ -7,9 +7,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
-import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
-import ru.hh.blokshnote.utility.colors.UserColorUtil;
 
 @Entity
 @Table(name = "users")
@@ -29,9 +27,6 @@ public class User {
   @JoinColumn(name = "room_id", nullable = false)
   private Room room;
 
-  @Column(name = "user_color", nullable = false)
-  private String userColor;
-
   public User() {
   }
 
@@ -39,7 +34,6 @@ public class User {
     this.name = name;
     this.isAdmin = isAdmin;
     this.room = room;
-    this.userColor = UserColorUtil.generateUserColor(name);
   }
 
   public Long getId() {
@@ -68,20 +62,5 @@ public class User {
 
   public void setRoom(Room room) {
     this.room = room;
-  }
-
-  public String getUserColor() {
-    return userColor;
-  }
-
-  public void setUserColor(String userColor) {
-    this.userColor = userColor;
-  }
-
-  @PrePersist
-  private void ensureColorIsGenerated() {
-    if (this.userColor == null || this.userColor.isEmpty()) {
-      this.userColor = UserColorUtil.generateUserColor(this.name);
-    }
   }
 }

@@ -31,6 +31,7 @@ import static ru.hh.blokshnote.utility.WsMessageType.USERS_UPDATE;
 import static ru.hh.blokshnote.utility.WsMessageType.USER_ACTIVITY;
 import static ru.hh.blokshnote.utility.WsPathParam.ROOM_UUID;
 import static ru.hh.blokshnote.utility.WsPathParam.USER;
+import ru.hh.blokshnote.utility.colors.UserColorUtil;
 
 @Component
 public class RoomSocketHandler {
@@ -51,7 +52,7 @@ public class RoomSocketHandler {
       String userName = client.getHandshakeData().getSingleUrlParam(USER.getLabel());
       LOGGER.info("User with name={} requested connection to room with UUID={}", userName, roomUuidString);
       User user = roomService.getUser(roomUuid, userName);
-      client.set(USER_STATE_KEY, new UserStateDto(userName, true, user.isAdmin(), user.getUserColor()));
+      client.set(USER_STATE_KEY, new UserStateDto(userName, true, user.isAdmin(), UserColorUtil.generateUserColor(userName)));
       client.joinRoom(roomUuidString);
 
       sendEditorState(client, roomUuid);
