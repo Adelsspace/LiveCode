@@ -1,0 +1,10 @@
+databaseChangeLog:
+  - logicalFilePath: db/changelog/migrations/drop_not_null_constraint_in_comments_user_id.yaml
+  - changeSet:
+      id: allow-null-user-in-comments
+      author: misha
+      changes:
+        - dropNotNullConstraint:
+            tableName: comments
+            columnName: user_id
+            columnDataType: BIGINT
