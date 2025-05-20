@@ -143,12 +143,14 @@ ws://localhost:8080/ws/room/connect?user=John&roomUuid=82cf90c2-b024-4ad1-899a-a
     {
       "username": "John",
       "isActive": true,
-      "isAdmin": true
+      "isAdmin": true,
+      "color": "#f58231"
     },
     {
       "username": "Jane",
       "isActive": true,
-      "isAdmin": false
+      "isAdmin": false,
+      "color": "#008080"
     }
   ]
 }
