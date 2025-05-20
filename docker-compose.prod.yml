@@ -42,6 +42,8 @@ services:
       - "80:80"
     volumes:
       - ./nginx/prod.conf:/etc/nginx/conf.d/default.conf:ro
+      - /etc/letsencrypt/live/notbadcode.com/fullchain.pem:/etc/letsencrypt/live/notbadcode.com/fullchain.pem:ro
+      - /etc/letsencrypt/live/notbadcode.com/privkey.pem:/etc/letsencrypt/live/notbadcode.com/privkey.pem:ro
     depends_on:
       - code-backend
       - code-frontend
