@@ -124,7 +124,7 @@ public class RoomService {
     String wsScheme = "https".equalsIgnoreCase(proto) ? "wss" : "ws";
 
     int port = 443;
-    String url = String.format("%s://%s%s", wsScheme, request.getServerName(),
+    String url = String.format("%s://%s%s", wsScheme, "notbadcode.com",
                         WebSocketConfig.ROOM_URI_TEMPLATE);
     return new WebSocketUrlDto(url);
   }
