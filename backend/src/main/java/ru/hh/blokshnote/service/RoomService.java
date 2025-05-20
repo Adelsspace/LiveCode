@@ -21,6 +21,8 @@ import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 
+import jakarta.servlet.http.HttpServletRequest;
+
 @Service
 public class RoomService {
 
@@ -110,14 +112,28 @@ public class RoomService {
   }
 
   @Transactional(readOnly = true)
-  public WebSocketUrlDto getRoomUrl(UUID roomUuid, String serverHost, int serverPort, String scheme) {
+  public WebSocketUrlDto getRoomUrl(UUID roomUuid, HttpServletRequest request) {
     roomRepository.findByRoomUuid(roomUuid)
-        .orElseThrow(() -> {
-          LOGGER.info("Room with UUID={} not found", roomUuid);
-          return new ResponseStatusException(HttpStatus.NOT_FOUND, String.format("Room with UUID=%s not found", roomUuid));
-        });
-    String wsScheme = "https".equals(scheme) ? "wss" : "ws";
-    return new WebSocketUrlDto(String.format("%s://%s:%d%s", wsScheme, serverHost, serverPort, WebSocketConfig.ROOM_URI_TEMPLATE));
+        .orElseThrow(() -> new ResponseStatusException(
+            HttpStatus.NOT_FOUND,
+            String.format("Room with UUID=%s not found", roomUuid)));
+
+    String proto = Optional.ofNullable(request.getHeader("X-Forwarded-Proto"))
+                           .orElse(request.getScheme());
+
+    String wsScheme = "https".equalsIgnoreCase(proto) ? "wss" : "ws";
+
+    int port = request.getServerPort();
+    boolean defaultPort = ("https".equalsIgnoreCase(proto) && port == 443) ||
+                          ("http".equalsIgnoreCase(proto)  && port == 80);
+
+    String url = defaultPort
+        ? String.format("%s://%s%s", wsScheme, request.getServerName(),
+                        WebSocketConfig.ROOM_URI_TEMPLATE)
+        : String.format("%s://%s:%d%s", wsScheme, request.getServerName(),
+                        port, WebSocketConfig.ROOM_URI_TEMPLATE);
+
+    return new WebSocketUrlDto(url);
   }
 
   @Transactional

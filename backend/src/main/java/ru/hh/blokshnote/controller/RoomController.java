@@ -76,6 +76,6 @@ public class RoomController {
   @GetMapping("/{uuid}/url")
   public WebSocketUrlDto getWebSocketUrl(@PathVariable("uuid") UUID roomUuid, HttpServletRequest request) {
     LOGGER.info("Request websocket URL for roomUuid={}", roomUuid);
-    return roomService.getRoomUrl(roomUuid, request.getServerName(), request.getServerPort(), request.getScheme());
+    return roomService.getRoomUrl(roomUuid, request);
   }
 }
