@@ -13,6 +13,7 @@ import ru.hh.blokshnote.dto.comment.response.RoomCommentsResponse;
 import ru.hh.blokshnote.entity.Comment;
 import ru.hh.blokshnote.entity.Room;
 import ru.hh.blokshnote.entity.User;
+import ru.hh.blokshnote.handler.RoomSocketHandler;
 import ru.hh.blokshnote.repository.CommentRepository;
 import ru.hh.blokshnote.repository.UserRepository;
 import ru.hh.blokshnote.utility.security.RoomSecurityUtils;
@@ -22,15 +23,18 @@ public class CommentService {
   private final UserRepository userRepository;
   private final CommentRepository commentRepository;
   private final RoomService roomService;
+  private final RoomSocketHandler roomSocketHandler;
 
   public CommentService(
       UserRepository userRepository,
       CommentRepository commentRepository,
-      RoomService roomService
+      RoomService roomService,
+      RoomSocketHandler roomSocketHandler
   ) {
     this.userRepository = userRepository;
     this.commentRepository = commentRepository;
     this.roomService = roomService;
+    this.roomSocketHandler = roomSocketHandler;
   }
 
   @Transactional
@@ -45,6 +49,7 @@ public class CommentService {
         .orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN, "Admin with this username not found in room"));
     Comment comment = new Comment(content, room, admin, false);
     commentRepository.save(comment);
+    roomSocketHandler.broadcastNewCommentToAdmins(String.valueOf(roomUuid));
     return CommentDto.fromEntity(comment);
   }
 
@@ -62,6 +67,7 @@ public class CommentService {
   public CommentDto createReviewComment(Room room, String content) {
     Comment comment = new Comment(content, room, null, true);
     commentRepository.save(comment);
+    roomSocketHandler.broadcastNewCommentToAdmins(String.valueOf(room.getRoomUuid()));
     return CommentDto.fromEntity(comment);
   }
 }

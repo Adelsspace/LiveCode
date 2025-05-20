@@ -3,6 +3,9 @@ package ru.hh.blokshnote.handler;
 import com.corundumstudio.socketio.AckRequest;
 import com.corundumstudio.socketio.SocketIOClient;
 import com.corundumstudio.socketio.SocketIONamespace;
+import java.util.List;
+import java.util.UUID;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -17,13 +20,9 @@ import ru.hh.blokshnote.dto.websocket.UsersUpdateDto;
 import ru.hh.blokshnote.entity.Room;
 import ru.hh.blokshnote.entity.User;
 import ru.hh.blokshnote.service.RoomService;
-
-import java.util.List;
-import java.util.UUID;
-import java.util.stream.Collectors;
-
 import static ru.hh.blokshnote.utility.WsMessageType.CURSOR_POSITION;
 import static ru.hh.blokshnote.utility.WsMessageType.LANGUAGE_CHANGE;
+import static ru.hh.blokshnote.utility.WsMessageType.NEW_COMMENT;
 import static ru.hh.blokshnote.utility.WsMessageType.NEW_EDITOR_STATE;
 import static ru.hh.blokshnote.utility.WsMessageType.TEXT_SELECTION;
 import static ru.hh.blokshnote.utility.WsMessageType.TEXT_UPDATE;
@@ -38,6 +37,7 @@ public class RoomSocketHandler {
   private static final Logger LOGGER = LoggerFactory.getLogger(RoomSocketHandler.class);
   private final String USER_STATE_KEY = "USER_STATE";
   private final RoomService roomService;
+  private SocketIONamespace namespace;
 
 
   public RoomSocketHandler(RoomService roomService) {
@@ -45,6 +45,7 @@ public class RoomSocketHandler {
   }
 
   public void registerListeners(SocketIONamespace namespace) {
+    this.namespace = namespace;
     namespace.addConnectListener(client -> {
       String roomUuidString = client.getHandshakeData().getSingleUrlParam(ROOM_UUID.getLabel());
       UUID roomUuid = UUID.fromString(roomUuidString);
@@ -67,7 +68,8 @@ public class RoomSocketHandler {
     namespace.addEventListener(NEW_EDITOR_STATE.name(), EditorStateDto.class, (client, data, ackSender) -> {
       String roomUuid = client.getHandshakeData().getSingleUrlParam(ROOM_UUID.getLabel());
       LOGGER.info("Updating editor text={} and language={} in room with UUID={}",
-          data.getText(), data.getLanguage(), roomUuid);
+          data.getText(), data.getLanguage(), roomUuid
+      );
       Room room = roomService.updateRoomEditor(UUID.fromString(roomUuid), data);
       broadcastEditorState(namespace, room);
     });
@@ -92,11 +94,13 @@ public class RoomSocketHandler {
     List<UserStateDto> users = namespace.getRoomOperations(roomUuid).getClients().stream()
         .map(client -> (UserStateDto) client.get(USER_STATE_KEY))
         .toList();
-    LOGGER.info("Users={} now in room with UUID={}",
+    LOGGER.info(
+        "Users={} now in room with UUID={}",
         users.stream()
             .map(UserStateDto::getUsername)
             .collect(Collectors.toSet()),
-        roomUuid);
+        roomUuid
+    );
     namespace.getRoomOperations(roomUuid).sendEvent(USERS_UPDATE.name(), new UsersUpdateDto(users));
   }
 
@@ -135,7 +139,8 @@ public class RoomSocketHandler {
     userState.setActive(data.isActive());
     client.set(USER_STATE_KEY, userState);
     LOGGER.info("In room with UUID={} user={} now {}", roomUuid, data.getUsername(),
-        data.isActive() ? "active" : "inactive");
+        data.isActive() ? "active" : "inactive"
+    );
     SocketIONamespace namespace = client.getNamespace();
     namespace.getRoomOperations(roomUuid).sendEvent(USER_ACTIVITY.name(), data);
   }
@@ -153,5 +158,17 @@ public class RoomSocketHandler {
     LOGGER.info("In room with UUID={} user={} updated text", roomUuid, data.getUsername());
     SocketIONamespace namespace = client.getNamespace();
     namespace.getRoomOperations(roomUuid).sendEvent(TEXT_UPDATE.name(), data);
+  }
+
+  public void broadcastNewCommentToAdmins(String roomUuid) {
+    if (this.namespace == null) {
+      LOGGER.error("Namespace not initialized in RoomSocketHandler. Cannot broadcast NEW_COMMENT.");
+      return;
+    }
+    LOGGER.info("Broadcasting NEW_COMMENT notification to admins in room {}", roomUuid);
+    namespace.getRoomOperations(roomUuid).getClients().stream().filter(client -> {
+      UserStateDto userState = client.get(USER_STATE_KEY);
+      return (userState != null && userState.isAdmin());
+    }).forEach(client -> client.sendEvent(NEW_COMMENT.name()));
   }
 }
