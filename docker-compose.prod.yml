@@ -39,7 +39,7 @@ services:
     image: nginx:1.27
     restart: unless-stopped
     ports:
-      - "80:80"
+      - "443:443"
     volumes:
       - ./nginx/prod.conf:/etc/nginx/conf.d/default.conf:ro
       - /etc/letsencrypt/live/notbadcode.com/fullchain.pem:/etc/letsencrypt/live/notbadcode.com/fullchain.pem:ro
