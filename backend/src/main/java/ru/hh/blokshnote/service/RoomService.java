@@ -123,16 +123,9 @@ public class RoomService {
 
     String wsScheme = "https".equalsIgnoreCase(proto) ? "wss" : "ws";
 
-    int port = request.getServerPort();
-    boolean defaultPort = ("https".equalsIgnoreCase(proto) && port == 443) ||
-                          ("http".equalsIgnoreCase(proto)  && port == 80);
-
-    String url = defaultPort
-        ? String.format("%s://%s%s", wsScheme, request.getServerName(),
-                        WebSocketConfig.ROOM_URI_TEMPLATE)
-        : String.format("%s://%s:%d%s", wsScheme, request.getServerName(),
-                        port, WebSocketConfig.ROOM_URI_TEMPLATE);
-
+    int port = 443;
+    String url = String.format("%s://%s%s", wsScheme, request.getServerName(),
+                        WebSocketConfig.ROOM_URI_TEMPLATE);
     return new WebSocketUrlDto(url);
   }
 
