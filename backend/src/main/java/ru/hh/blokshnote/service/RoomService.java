@@ -121,7 +121,7 @@ public class RoomService {
           LOGGER.info("Room with UUID={} not found", roomUuid);
           return new ResponseStatusException(HttpStatus.NOT_FOUND, String.format("Room with UUID=%s not found", roomUuid));
         });
-    return new WebSocketUrlDto(String.format("ws://%s:%d%s", serverHost, serverPort, WebSocketConfig.ROOM_URI_TEMPLATE));
+    return new WebSocketUrlDto(String.format("wss://%s%s", serverHost, WebSocketConfig.ROOM_URI_TEMPLATE));
   }
 
   @Transactional
