@@ -29,6 +29,9 @@ class SocketService {
       if ("data" in result) {
         const { data } = result;
         if (!data?.wsConnectUrl) throw new Error("WebSocket URL not found");
+
+        console.log(data.wsConnectUrl)
+
         this.socket = io(data.wsConnectUrl, {
           query: {
             roomUuid: roomId,
