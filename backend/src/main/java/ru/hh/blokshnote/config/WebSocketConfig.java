@@ -11,7 +11,7 @@ import ru.hh.blokshnote.utility.WsPathParam;
 @org.springframework.context.annotation.Configuration
 public class WebSocketConfig {
 
-  public static final String ROOM_URI_TEMPLATE = "/ws/room/connect/";
+  public static final String ROOM_URI_TEMPLATE = "/ws/room/connect";
 
   @Value("${socketio.host}")
   private String host;
