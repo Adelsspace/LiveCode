@@ -1,21 +1,22 @@
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import { useCreateRoomMutation } from "../../store/api/roomApi";
 import styles from "./HomePage.module.scss";
 import ThemeToggle from "../../components/ThemeToggle/ThemeToggle";
 import { Logo } from "../../components";
 
 const HomePage = () => {
   const navigate = useNavigate();
+  const [createRoom] = useCreateRoomMutation();
 
   const handleCreateRoom = async () => {
     try {
       const roomId = crypto.randomUUID();
-      const response = await axios.post("/api/rooms", {
+      const { adminToken } = await createRoom({
         username: "Host",
         uuid: roomId,
-      });
+      }).unwrap();
 
-      navigate(`/room/${roomId}?adminToken=${response.data.adminToken}`);
+      navigate(`/room/${roomId}?adminToken=${adminToken}`);
     } catch (error) {
       console.error("Ошибка создания комнаты:", error);
       navigate("/error");
