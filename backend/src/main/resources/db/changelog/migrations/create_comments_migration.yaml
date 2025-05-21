@@ -1,0 +1,69 @@
+databaseChangeLog:
+- logicalFilePath: db/changelog/migrations/create_comments_migration.yaml
+- changeSet:
+    id: 1746716187185-1
+    author: misha (generated)
+    changes:
+    - createTable:
+        columns:
+        - column:
+            autoIncrement: true
+            constraints:
+              nullable: false
+              primaryKey: true
+              primaryKeyName: commentsPK
+            name: id
+            type: BIGINT
+        - column:
+            constraints:
+              nullable: false
+            name: content
+            type: VARCHAR(255)
+        - column:
+            constraints:
+              nullable: false
+            name: created_at
+            type: TIMESTAMP(6) WITHOUT TIME ZONE
+        - column:
+            constraints:
+              nullable: false
+            name: is_llm
+            type: BOOLEAN
+        - column:
+            constraints:
+              nullable: false
+            name: room_id
+            type: BIGINT
+        - column:
+            constraints:
+              nullable: false
+            name: user_id
+            type: BIGINT
+        tableName: comments
+- changeSet:
+    id: 1746716187185-2
+    author: misha (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: user_id
+        baseTableName: comments
+        constraintName: FK8omq0tc18jd43bu5tjh6jvraq
+        deferrable: false
+        initiallyDeferred: false
+        referencedColumnNames: id
+        referencedTableName: users
+        validate: true
+- changeSet:
+    id: 1746716187185-3
+    author: misha (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: room_id
+        baseTableName: comments
+        constraintName: FKs6vl9ljbur2bn91hqh3se3w01
+        deferrable: false
+        initiallyDeferred: false
+        referencedColumnNames: id
+        referencedTableName: rooms
+        validate: true
+
