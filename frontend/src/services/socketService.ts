@@ -30,9 +30,10 @@ class SocketService {
         const { data } = result;
         if (!data?.wsConnectUrl) throw new Error("WebSocket URL not found");
 
-        console.log(data.wsConnectUrl)
+        const parsedUrl = new URL(data.wsConnectUrl);
 
         this.socket = io(data.wsConnectUrl, {
+          path: parsedUrl.pathname,
           query: {
             roomUuid: roomId,
             user: username,
