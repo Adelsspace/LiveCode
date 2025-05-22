@@ -8,4 +8,5 @@ public enum WsMessageType {
   LANGUAGE_CHANGE,
   TEXT_UPDATE,
   USERS_UPDATE,
+  NEW_COMMENT,
 }
