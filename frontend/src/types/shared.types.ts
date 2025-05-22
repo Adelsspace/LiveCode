@@ -13,3 +13,53 @@ export type Participant = {
   adminToken?: string;
   username: string;
 };
+
+export interface User {
+  username: string;
+  isActive: boolean;
+  isAdmin: boolean;
+}
+
+export interface EditorState {
+  text: string;
+  language: string;
+}
+
+export interface TextSelection {
+  startLineNumber: number;
+  startColumn: number;
+  endLineNumber: number;
+  endColumn: number;
+  username: string;
+}
+
+export interface CursorPosition {
+  lineNumber: number;
+  column: number;
+  username: string;
+}
+
+export interface UserActivity {
+  isActive: boolean;
+  username: string;
+}
+
+export interface LanguageChange {
+  language: string;
+  username: string;
+}
+
+export interface TextUpdate {
+  changes: {
+    range: {
+      startLineNumber: number;
+      startColumn: number;
+      endLineNumber: number;
+      endColumn: number;
+    };
+    text: string;
+    forceMoveMarkers: boolean;
+    version: number;
+  }[];
+  username: string;
+}

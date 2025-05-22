@@ -6,11 +6,13 @@ public class UserStateDto {
   private String username;
   private boolean isActive;
   private boolean isAdmin;
+  private String color;
 
-  public UserStateDto(String username, boolean isActive, boolean isAdmin) {
+  public UserStateDto(String username, boolean isActive, boolean isAdmin, String color) {
     this.username = username;
     this.isActive = isActive;
     this.isAdmin = isAdmin;
+    this.color = color;
   }
 
   public UserStateDto() {
@@ -40,5 +42,13 @@ public class UserStateDto {
 
   public void setAdmin(boolean admin) {
     isAdmin = admin;
+  }
+
+  public String getColor() {
+    return color;
+  }
+
+  public void setColor(String color) {
+    this.color = color;
   }
 }

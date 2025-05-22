@@ -1,26 +1,28 @@
 import { useEffect, useState, useCallback } from "react";
-import { useParams, useNavigate, useSearchParams } from "react-router-dom";
-import axios from "axios";
-import { CodeEditor, RoomAuthModal, UsersList } from "../../components";
-import { useWebSocket } from "../../hooks/useWebSocket";
+import { useParams, useNavigate } from "react-router-dom";
+import { useGetRoomQuery } from "../../store/api/roomApi";
+import { useSocket } from "../../hooks/useSocket";
+import { socketService } from "../../services/socketService";
+import { CodeEditor, RoomAuth } from "../../components";
+import type { Participant } from "../../types/shared.types";
 import styles from "./RoomPage.module.scss";
-import { Participant } from "../../types/shared.types";
+import { useAppDispatch } from "../../hooks/reduxHooks";
+import { setUserActivityByUsername } from "../../store/slices/roomSlice";
 
 const RoomPage = () => {
   const { roomId } = useParams<{ roomId: string }>();
   const navigate = useNavigate();
-  const [searchParams, setSearchParams] = useSearchParams();
+  const dispatch = useAppDispatch();
   const [showPopup, setShowPopup] = useState(false);
-  const [errorMessage, setErrorMessage] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [roomStatus, setRoomStatus] = useState<"LOADING" | "EXISTS">("LOADING");
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [username, setUsername] = useState<string | null>(null);
 
-  const { editorContent, users, sendMessage } = useWebSocket(
-    roomId,
-    username ?? undefined
-  );
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [username, setUsername] = useState<string>("");
+
+  const { data: roomData, error: roomError } = useGetRoomQuery(roomId!, {
+    skip: !roomId,
+  });
+
+  useSocket(roomId, username ?? undefined);
 
   const handleBeforeUnload = useCallback((e: BeforeUnloadEvent) => {
     if (sessionStorage.getItem("participant")) {
@@ -29,11 +31,17 @@ const RoomPage = () => {
   }, []);
 
   useEffect(() => {
-    const checkRoom = async () => {
-      try {
-        await axios.get(`/api/rooms/${roomId}`);
-        setRoomStatus("EXISTS");
+    const checkRoom = () => {
+      if (roomError) {
+        if ("status" in roomError && roomError.status === 404) {
+          navigate("/pageNotFound");
+        } else {
+          navigate("/error");
+        }
+        return;
+      }
 
+      if (roomData) {
         const savedParticipant = sessionStorage.getItem("participant");
         if (savedParticipant) {
           const participant: Participant = JSON.parse(savedParticipant);
@@ -46,12 +54,6 @@ const RoomPage = () => {
           }
         }
         setShowPopup(true);
-      } catch (error) {
-        if (axios.isAxiosError(error) && error.response?.status === 404) {
-          navigate("/pageNotFound");
-        } else {
-          navigate("/error");
-        }
       }
     };
 
@@ -59,99 +61,50 @@ const RoomPage = () => {
     return () => {
       window.removeEventListener("beforeunload", handleBeforeUnload);
     };
-  }, [roomId, navigate, handleBeforeUnload]);
+  }, [roomData, roomError, roomId, navigate, handleBeforeUnload]);
 
-  const handleAdminRequest = async (username: string) => {
-    try {
-      const adminToken = searchParams.get("adminToken");
-      const { data } = await axios.post(
-        `/api/rooms/${roomId}/admin`,
-        { username },
-        { params: { adminToken } }
-      );
-      return { success: true, data, isAdmin: true };
-    } catch (error) {
-      if (axios.isAxiosError(error) && error.response?.status === 403) {
-        return { success: false };
-      }
-      throw error;
-    }
+  useEffect(() => {
+    if (!username) return;
+
+    const updateUserActivity = (isActive: boolean) => {
+      socketService.sendUserActivity(isActive, username);
+      dispatch(setUserActivityByUsername({ isActive, username }));
+    };
+
+    const handleVisibilityChange = () => {
+      updateUserActivity(document.visibilityState === "visible");
+    };
+
+    const handleBlur = () => updateUserActivity(false);
+    const handleFocus = () => updateUserActivity(true);
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("blur", handleBlur);
+    window.addEventListener("focus", handleFocus);
+
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("blur", handleBlur);
+      window.removeEventListener("focus", handleFocus);
+    };
+  }, [username, dispatch]);
+
+  const handleAuthSuccess = (usernameInput: string, isAdmin: boolean) => {
+    setUsername(usernameInput);
+    setIsAdmin(isAdmin);
+    setShowPopup(false);
   };
 
-  const handleUserRequest = async (username: string) => {
-    const { data } = await axios.post(`/api/rooms/${roomId}/users`, {
-      username,
-    });
-    return { success: true, data, isAdmin: false };
-  };
-
-  const handleSubmit = async (usernameInput: string) => {
-    if (!usernameInput.trim() || isSubmitting) return;
-
-    setIsSubmitting(true);
-    setErrorMessage("");
-
-    try {
-      let result;
-      if (searchParams.has("adminToken")) {
-        result = await handleAdminRequest(usernameInput);
-        if (!result.success) {
-          searchParams.delete("adminToken");
-          setSearchParams(searchParams);
-          result = await handleUserRequest(usernameInput);
-        }
-      } else {
-        result = await handleUserRequest(usernameInput);
-      }
-
-      const participant: Participant = {
-        roomId: roomId!,
-        username: usernameInput,
-        adminToken:
-          result.data.adminToken || searchParams.get("adminToken") || undefined,
-      };
-
-      sessionStorage.setItem("participant", JSON.stringify(participant));
-      setIsAdmin(result.isAdmin ?? false);
-      setUsername(usernameInput);
-      setShowPopup(false);
-    } catch (error) {
-      console.error("Authentication failed:", error);
-      setErrorMessage(
-        axios.isAxiosError(error)
-          ? error.response?.data?.message || "Authentication failed"
-          : "Unknown error occurred"
-      );
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleCodeChange = useCallback(
-    (newCode: string) => sendMessage(newCode),
-    [sendMessage]
-  );
-
-  if (roomStatus === "LOADING") {
+  if (!roomData && !roomError) {
     return <div className={styles.loading}>Загрузка...</div>;
   }
 
   return (
     <div className={styles.container}>
-      <CodeEditor
-        isAdmin={isAdmin}
-        onCodeChange={handleCodeChange}
-        initialCode={editorContent}
-      />
-      <UsersList users={users} />
-
-      {showPopup && (
-        <RoomAuthModal
-          isAdmin={searchParams.has("adminToken")}
-          errorMessage={errorMessage}
-          isSubmitting={isSubmitting}
-          onSubmit={handleSubmit}
-        />
+      {showPopup ? (
+        <RoomAuth roomId={roomId!} onAuthSuccess={handleAuthSuccess} />
+      ) : (
+        <CodeEditor isAdmin={isAdmin} />
       )}
     </div>
   );
