@@ -33,8 +33,9 @@ public class RoomService {
   private static final String INITIAL_EDITOR_LANGUAGE = "javascript";
   @Value("${socketio.host-frontend}")
   private String serverHost;
-  @Value("${socketio.port}")
-  private int serverPort;
+
+  @Value("${socketio.protocol}")
+  private String protocol;
 
   private final RoomRepository roomRepository;
   private final UserRepository userRepository;
@@ -121,12 +122,7 @@ public class RoomService {
           LOGGER.info("Room with UUID={} not found", roomUuid);
           return new ResponseStatusException(HttpStatus.NOT_FOUND, String.format("Room with UUID=%s not found", roomUuid));
         });
-
-    String url = String.format("wss://%s%s", serverHost, WebSocketConfig.ROOM_URI_TEMPLATE);
-
-    LOGGER.info("Room with UUID={} url={}", roomUuid, url);
-
-    return new WebSocketUrlDto(url);
+    return new WebSocketUrlDto(String.format("%s://%s%s", protocol, serverHost, WebSocketConfig.ROOM_URI_TEMPLATE));
   }
 
   @Transactional
