@@ -1,41 +1,28 @@
 import { useState } from "react";
 import {
   changeEditorFontSize,
-  changeEditorLanguage,
   changeEditorTheme,
   getSettings,
 } from "../../utils";
-import {
-  EditorFontSize,
-  EditorLanguage,
-  EditorTheme,
-} from "../../types/shared.types";
+import { EditorFontSize, EditorTheme } from "../../types/shared.types";
 import { EditorControls } from "../EditorControls/EditorControls";
 import MonacoEditor from "../MonacoEditor/MonacoEditor";
+import { Logo } from "../Logo/Logo";
+import { UsersList } from "../UsersList/UsersList";
+import styles from "./CodeEditor.module.scss";
+import { useAppSelector } from "../../hooks/reduxHooks";
 
 interface CodeEditorProps {
   isAdmin: boolean;
-  initialCode?: string;
-  onCodeChange?: (code: string) => void;
 }
 
-export const CodeEditor = ({
-  isAdmin,
-  initialCode = "",
-  onCodeChange,
-}: CodeEditorProps) => {
+export const CodeEditor = ({ isAdmin }: CodeEditorProps) => {
   const initialSettings = getSettings();
-  const [editorLanguage, setEditorLanguage] = useState(
-    initialSettings.editorLanguage
-  );
   const [editorTheme, setEditorTheme] = useState(initialSettings.editorTheme);
   const [editorFontSize, setEditorFontSize] = useState(
     initialSettings.editorFontSize
   );
-  const handleLanguageChange = (newLanguage: EditorLanguage) => {
-    setEditorLanguage(newLanguage);
-    changeEditorLanguage(newLanguage);
-  };
+  const { text, language } = useAppSelector((state) => state.room.editorState);
 
   const handleThemeChange = (newTheme: EditorTheme) => {
     setEditorTheme(newTheme);
@@ -48,21 +35,23 @@ export const CodeEditor = ({
   };
   return (
     <div>
-      <EditorControls
-        editorLanguage={editorLanguage}
+      <header className={styles.header}>
+        <Logo />
+        <UsersList />
+      </header>
+
+      <MonacoEditor
+        initialCode={text}
+        editorLanguage={language}
         editorTheme={editorTheme}
         editorFontSize={editorFontSize}
-        onLanguageChange={handleLanguageChange}
+      />
+      <EditorControls
+        editorTheme={editorTheme}
+        editorFontSize={editorFontSize}
         onThemeChange={handleThemeChange}
         onFontSizeChange={handleFontSizeChange}
         isAdmin={isAdmin}
-      />
-      <MonacoEditor
-        initialCode={initialCode}
-        editorLanguage={editorLanguage}
-        editorTheme={editorTheme}
-        editorFontSize={editorFontSize}
-        onCodeChange={onCodeChange}
       />
     </div>
   );

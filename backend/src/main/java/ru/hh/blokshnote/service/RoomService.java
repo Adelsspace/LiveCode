@@ -1,9 +1,5 @@
 package ru.hh.blokshnote.service;
 
-import java.time.Duration;
-import java.time.Instant;
-import java.util.Optional;
-import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -22,12 +18,19 @@ import ru.hh.blokshnote.repository.RoomRepository;
 import ru.hh.blokshnote.repository.UserRepository;
 import ru.hh.blokshnote.utility.security.RoomSecurityUtils;
 
+import java.time.Duration;
+import java.time.Instant;
+import java.util.Optional;
+import java.util.UUID;
+
 @Service
 public class RoomService {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(RoomService.class);
 
   private static final Duration ROOM_TIME_TO_LIVE = Duration.ofHours(3);
+  private static final String INITIAL_EDITOR_TEXT = "//Начните писать код";
+  private static final String INITIAL_EDITOR_LANGUAGE = "javascript";
   @Value("${socketio.host-frontend}")
   private String serverHost;
   @Value("${socketio.port}")
@@ -56,7 +59,8 @@ public class RoomService {
     room.setAdminToken(UUID.randomUUID());
     room.setCreatedAt(now);
     room.setExpiredAt(now.plus(ROOM_TIME_TO_LIVE));
-    room.setEditorText("");
+    room.setEditorText(INITIAL_EDITOR_TEXT);
+    room.setEditorLanguage(INITIAL_EDITOR_LANGUAGE);
     room = roomRepository.save(room);
 
     User adminUser = new User();

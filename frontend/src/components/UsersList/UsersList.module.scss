@@ -1,9 +1,28 @@
 .usersList {
-  position: absolute;
-  top: 20px;
-  right: 40px;
-}
+  ul {
+    display: flex;
+    flex-wrap: wrap;
+    color: black;
+  }
 
-.userItem {
-  padding: 5px;
+  .userItem {
+    background-color: transparent;
+    border-radius: 4px;
+    padding: 3px 7px;
+    margin: 5px;
+    display: flex;
+    align-items: center;
+  }
+
+  .adminStar {
+    color: red;
+    margin-right: 5px;
+  }
+
+  .statusIndicator {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    margin-left: 10px;
+  }
 }

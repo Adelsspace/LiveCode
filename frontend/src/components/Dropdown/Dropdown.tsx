@@ -14,8 +14,12 @@ export const Dropdown = <T extends string | number>({
 }: DropdownProps<T>) => {
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const [selectedOption, setSelectedOption] = useState<T | undefined>(
-    defaultValue || options[0]
+    defaultValue
   );
+  useEffect(() => {
+    setSelectedOption(defaultValue);
+  }, [defaultValue]);
+
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const handleClickOutside = (event: MouseEvent) => {
