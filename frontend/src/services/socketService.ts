@@ -29,12 +29,7 @@ class SocketService {
       if ("data" in result) {
         const { data } = result;
         if (!data?.wsConnectUrl) throw new Error("WebSocket URL not found");
-
-        const parsedUrl = new URL(data.wsConnectUrl);
-        const cleanPath = parsedUrl.pathname.replace(/\/$/, "");
-
-        this.socket = io(parsedUrl.origin, {
-          path: cleanPath,
+        this.socket = io(data.wsConnectUrl, {
           query: {
             roomUuid: roomId,
             user: username,
