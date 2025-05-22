@@ -2,9 +2,11 @@ package ru.hh.blokshnote.config;
 
 import com.corundumstudio.socketio.AuthorizationResult;
 import com.corundumstudio.socketio.Configuration;
+import com.corundumstudio.socketio.SocketIONamespace;
 import com.corundumstudio.socketio.SocketIOServer;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Lazy;
 import ru.hh.blokshnote.handler.RoomSocketHandler;
 import ru.hh.blokshnote.utility.WsPathParam;
 
@@ -36,5 +38,10 @@ public class WebSocketConfig {
     handler.registerListeners(server.addNamespace(ROOM_URI_TEMPLATE));
     server.start();
     return server;
+  }
+
+  @Bean
+  public SocketIONamespace socketIONamespace(SocketIOServer socketIOServer) {
+    return socketIOServer.getNamespace(ROOM_URI_TEMPLATE);
   }
 }

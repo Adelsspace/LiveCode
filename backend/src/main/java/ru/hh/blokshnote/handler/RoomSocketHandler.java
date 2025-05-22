@@ -3,12 +3,15 @@ package ru.hh.blokshnote.handler;
 import com.corundumstudio.socketio.AckRequest;
 import com.corundumstudio.socketio.SocketIOClient;
 import com.corundumstudio.socketio.SocketIONamespace;
+import com.corundumstudio.socketio.SocketIOServer;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
+import ru.hh.blokshnote.config.WebSocketConfig;
 import ru.hh.blokshnote.dto.websocket.CursorPositionDto;
 import ru.hh.blokshnote.dto.websocket.EditorStateDto;
 import ru.hh.blokshnote.dto.websocket.LanguageChangeDto;
@@ -37,15 +40,14 @@ public class RoomSocketHandler {
   private static final Logger LOGGER = LoggerFactory.getLogger(RoomSocketHandler.class);
   private final String USER_STATE_KEY = "USER_STATE";
   private final RoomService roomService;
-  private SocketIONamespace namespace;
+  private final SocketIONamespace socketIONamespace;
 
-
-  public RoomSocketHandler(RoomService roomService) {
+  public RoomSocketHandler(RoomService roomService, @Lazy SocketIONamespace namespace) {
     this.roomService = roomService;
+    this.socketIONamespace = namespace;
   }
 
   public void registerListeners(SocketIONamespace namespace) {
-    this.namespace = namespace;
     namespace.addConnectListener(client -> {
       String roomUuidString = client.getHandshakeData().getSingleUrlParam(ROOM_UUID.getLabel());
       UUID roomUuid = UUID.fromString(roomUuidString);
@@ -160,15 +162,19 @@ public class RoomSocketHandler {
     namespace.getRoomOperations(roomUuid).sendEvent(TEXT_UPDATE.name(), data);
   }
 
-  public void broadcastNewCommentToAdmins(String roomUuid) {
-    if (this.namespace == null) {
+  public void broadcastNewCommentToAdmins(UUID uuidOfRoom) {
+    if (this.socketIONamespace == null) {
       LOGGER.error("Namespace not initialized in RoomSocketHandler. Cannot broadcast NEW_COMMENT.");
       return;
     }
+    String roomUuid = String.valueOf(uuidOfRoom);
     LOGGER.info("Broadcasting NEW_COMMENT notification to admins in room {}", roomUuid);
-    namespace.getRoomOperations(roomUuid).getClients().stream().filter(client -> {
-      UserStateDto userState = client.get(USER_STATE_KEY);
-      return (userState != null && userState.isAdmin());
-    }).forEach(client -> client.sendEvent(NEW_COMMENT.name()));
+    socketIONamespace.getRoomOperations(roomUuid).getClients()
+        .stream()
+        .filter(client -> {
+          UserStateDto userState = client.get(USER_STATE_KEY);
+          return (userState != null && userState.isAdmin());
+        })
+        .forEach(client -> client.sendEvent(NEW_COMMENT.name()));
   }
 }
