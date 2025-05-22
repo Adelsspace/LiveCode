@@ -40,11 +40,11 @@ public class RoomSocketHandler {
   private static final Logger LOGGER = LoggerFactory.getLogger(RoomSocketHandler.class);
   private final String USER_STATE_KEY = "USER_STATE";
   private final RoomService roomService;
-  private final SocketIONamespace socketIONamespace;
+  private final SocketIOServer socketIOServer;
 
-  public RoomSocketHandler(RoomService roomService, @Lazy SocketIONamespace namespace) {
+  public RoomSocketHandler(RoomService roomService, @Lazy SocketIOServer server) {
     this.roomService = roomService;
-    this.socketIONamespace = namespace;
+    this.socketIOServer = server;
   }
 
   public void registerListeners(SocketIONamespace namespace) {
@@ -163,13 +163,14 @@ public class RoomSocketHandler {
   }
 
   public void broadcastNewCommentToAdmins(UUID uuidOfRoom) {
-    if (this.socketIONamespace == null) {
+    SocketIONamespace namespace = socketIOServer.getNamespace(WebSocketConfig.ROOM_URI_TEMPLATE);
+    if (namespace == null) {
       LOGGER.error("Namespace not initialized in RoomSocketHandler. Cannot broadcast NEW_COMMENT.");
       return;
     }
     String roomUuid = String.valueOf(uuidOfRoom);
     LOGGER.info("Broadcasting NEW_COMMENT notification to admins in room {}", roomUuid);
-    socketIONamespace.getRoomOperations(roomUuid).getClients()
+   namespace.getRoomOperations(roomUuid).getClients()
         .stream()
         .filter(client -> {
           UserStateDto userState = client.get(USER_STATE_KEY);
