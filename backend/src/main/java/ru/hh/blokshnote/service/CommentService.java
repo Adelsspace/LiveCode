@@ -41,8 +41,17 @@ public class CommentService {
     Room room = roomService.getRoomByUuid(roomUuid);
     RoomSecurityUtils.verifyAdminToken(room, adminToken);
 
+    if (request.content() == null || request.content().trim().isEmpty()) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Comment content cannot be empty");
+    }
+
+    if (request.content().length() > 10000) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Comment is too long, maximum 10000 characters allowed");
+    }
+
     String username = request.author();
     String content = request.content();
+
     User admin = userRepository
         .findByNameAndRoom(username, room)
         .orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN, "Admin with this username not found in room"));
