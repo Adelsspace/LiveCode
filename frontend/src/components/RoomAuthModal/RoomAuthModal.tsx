@@ -1,5 +1,6 @@
 import { useState } from "react";
 import styles from "./RoomAuthModal.module.scss";
+import { Button } from "../Button/Button";
 
 interface RoomAuthModalProps {
   isAdmin: boolean;
@@ -35,13 +36,13 @@ export const RoomAuthModal = ({
             autoFocus
           />
           {errorMessage && <div className={styles.error}>{errorMessage}</div>}
-          <button
+          <Button
             type="submit"
             disabled={!username.trim() || isSubmitting}
+            loading={isSubmitting}
+            label="Присоединиться"
             className={styles.button}
-          >
-            {isSubmitting ? "Отправка..." : "Присоединиться"}
-          </button>
+          />
         </form>
       </div>
     </div>

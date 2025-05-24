@@ -5,3 +5,4 @@ export * from "./CodeEditor/CodeEditor";
 export * from "./Logo/Logo";
 export * from "./UsersList/UsersList";
 export * from "./RoomAuth/RoomAuth";
+export * from "./Button/Button";

@@ -1,0 +1,60 @@
+.button {
+  background: var(--secondary);
+  color: var(--text);
+  border: 1px solid var(--border);
+  padding: 10px 20px;
+  cursor: pointer;
+  transition: background 0.3s, color 0.3s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &:hover {
+    background: var(--hover);
+    color: var(--text);
+  }
+
+  &:disabled {
+    background: var(--disabled);
+    color: var(--disabled-text);
+    border: 1px solid var(--disabled-border);
+    cursor: not-allowed;
+  }
+}
+
+.icon {
+  margin-right: 8px;
+}
+
+.loader {
+  border: 2px solid var(--text);
+  border-top: 2px solid transparent;
+  border-radius: 50%;
+  width: 16px;
+  height: 16px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.small {
+  padding: 5px 10px;
+  font-size: 12px;
+}
+
+.medium {
+  padding: 10px 20px;
+  font-size: 14px;
+}
+
+.large {
+  padding: 15px 30px;
+  font-size: 16px;
+}
