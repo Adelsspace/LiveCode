@@ -1,0 +1,10 @@
+databaseChangeLog:
+- logicalFilePath: db/changelog/migrations/increase_comment_length.yaml
+- changeSet:
+    id: increase-comment-length
+    author: misha
+    changes:
+      - modifyDataType:
+          tableName: comments
+          columnName: content
+          newDataType: TEXT
