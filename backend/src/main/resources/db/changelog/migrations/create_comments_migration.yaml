@@ -66,4 +66,3 @@ databaseChangeLog:
         referencedColumnNames: id
         referencedTableName: rooms
         validate: true
-
