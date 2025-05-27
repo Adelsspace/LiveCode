@@ -14,8 +14,14 @@ public class LlmService {
 
   private final DeepSeekChatModel chatModel;
   private static final String PLACEHOLDER_KEY = "no-key";
-  private static final String PLACEHOLDER_RESPONSE =
-      "LLM review are disabled, since no llm key is provided";
+  private static final String PLACEHOLDER_RESPONSE = "LLM reviews are disabled since no llm key is provided";
+
+  private static final String PLACEHOLDER_PROMPT = "Analyze the solution to the given problem.";
+  private static final String INSTRUCTIONS = """
+      Keep the analysis clear and short.
+      Provide the time and space complexities of the given code and suggest improvements.
+      You are allowed to use 20 sentences max. Do not use markdown. Provide the response in Russian.
+      """;
 
   public LlmService(DeepSeekChatModel chatModel) {
     this.chatModel = chatModel;
@@ -24,13 +30,14 @@ public class LlmService {
   @Async
   public CompletableFuture<String> getReviewResponseAsync(String editorText, String prompt) {
     if (prompt == null || prompt.isBlank()) {
-      prompt = "Read the problem. Analyze the solution and give suggestions.";
+      prompt = PLACEHOLDER_PROMPT;
     }
+
     if (PLACEHOLDER_KEY.equals(apiKey.trim())) {
       return CompletableFuture.completedFuture(PLACEHOLDER_RESPONSE);
     }
 
-    String combined = prompt + "\n\n" + editorText;
+    String combined = prompt + "\n" + INSTRUCTIONS + "\n\n" + editorText;
     String response = chatModel.call(combined);
     return CompletableFuture.completedFuture(response);
   }
