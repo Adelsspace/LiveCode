@@ -24,9 +24,11 @@ services:
     image: code-backend
     container_name: bloksh-backend
     restart: always
-#    ports:
-#      - "8080:8080"
+    ports:
+      - "8080:8080"
 #      - "9092:9092"
+    env_file:
+      - .env
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/bloksh-db
       SPRING_DATASOURCE_USERNAME: hh-dev
