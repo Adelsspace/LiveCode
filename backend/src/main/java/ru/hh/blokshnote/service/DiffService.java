@@ -26,7 +26,6 @@ public class DiffService {
     String oldState = oldRoom.getEditorText();
     List<DiffMatchPatch.Patch> patches = diffMatchPatch.patchMake(oldState, newState);
     String content = diffMatchPatch.patchToText(patches);
-    String decodedContent = URLDecoder.decode(content, StandardCharsets.UTF_8);
-    diffRepository.save(new Diff(decodedContent, oldRoom));
+    diffRepository.save(new Diff(content, oldRoom));
   }
 }
