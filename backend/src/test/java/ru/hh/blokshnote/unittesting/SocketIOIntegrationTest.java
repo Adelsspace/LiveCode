@@ -1,6 +1,5 @@
 package ru.hh.blokshnote.unittesting;
 
-import com.corundumstudio.socketio.SocketIOServer;
 import io.socket.client.IO;
 import io.socket.client.Socket;
 import org.assertj.core.api.Assertions;
@@ -10,7 +9,6 @@ import org.json.JSONObject;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import ru.hh.blokshnote.entity.Room;
@@ -37,11 +35,10 @@ import static ru.hh.blokshnote.utility.WsMessageType.USER_ACTIVITY;
 @SpringBootTest
 public class SocketIOIntegrationTest extends AbstractIntegrationTest {
 
-  @Autowired
-  private SocketIOServer socketIOServer;
   @MockitoBean
   private RoomService roomService;
 
+  private static final int TIMEOUT = 500;
   private final String senderName = "John";
   private final String receiverName = "Jane";
 
@@ -51,16 +48,6 @@ public class SocketIOIntegrationTest extends AbstractIntegrationTest {
     System.setProperty("socketio.port", "9092");
   }
 
-  private Socket initClient(UUID roomUuid, String userName) throws URISyntaxException {
-    IO.Options options = new IO.Options();
-    options.reconnection = false;
-    options.forceNew = true;
-
-    return IO.socket(
-        "http://localhost:9092/ws/room/connect?roomUuid=%s&user=%s".formatted(roomUuid, userName),
-        options
-    );
-  }
 
   @Test
   public void testClientConnects() throws URISyntaxException, JSONException, ExecutionException, InterruptedException {
@@ -81,7 +68,8 @@ public class SocketIOIntegrationTest extends AbstractIntegrationTest {
     socket.on(NEW_EDITOR_STATE.name(), args -> editorStateFuture.complete((JSONObject) args[0]));
     socket.on(USERS_UPDATE.name(), args -> usersUpdateFuture.complete((JSONObject) args[0]));
     socket.connect();
-    CompletableFuture.allOf(editorStateFuture, usersUpdateFuture);
+    editorStateFuture.orTimeout(TIMEOUT, TimeUnit.MILLISECONDS);
+    usersUpdateFuture.orTimeout(TIMEOUT, TimeUnit.MILLISECONDS);
     JSONObject newEditorState = editorStateFuture.get();
     Assertions.assertThat(newEditorState.getString("text")).isEqualTo("Hello world!");
     Assertions.assertThat(newEditorState.getString("language")).isEqualTo("javascript");
@@ -117,7 +105,7 @@ public class SocketIOIntegrationTest extends AbstractIntegrationTest {
 
     sender.emit(TEXT_SELECTION.name(), textSelection);
 
-    var result = textSelectionFuture.orTimeout(500, TimeUnit.MILLISECONDS).get();
+    var result = textSelectionFuture.orTimeout(TIMEOUT, TimeUnit.MILLISECONDS).get();
 
     Assertions.assertThat(result.getString("username")).isEqualTo(senderName);
     Assertions.assertThat(result.getJSONObject("selection")).isNotNull();
@@ -153,7 +141,7 @@ public class SocketIOIntegrationTest extends AbstractIntegrationTest {
 
     sender.emit(CURSOR_POSITION.name(), cursorPosition);
 
-    var result = cursorPositionFuture.orTimeout(500, TimeUnit.MILLISECONDS).get();
+    var result = cursorPositionFuture.orTimeout(TIMEOUT, TimeUnit.MILLISECONDS).get();
 
     Assertions.assertThat(result.getString("username")).isEqualTo(senderName);
 
@@ -183,7 +171,7 @@ public class SocketIOIntegrationTest extends AbstractIntegrationTest {
 
     sender.emit(USER_ACTIVITY.name(), userActivity);
 
-    var result = userActivityFuture.orTimeout(500, TimeUnit.MILLISECONDS).get();
+    var result = userActivityFuture.orTimeout(TIMEOUT, TimeUnit.MILLISECONDS).get();
 
     Assertions.assertThat(result.getString("username")).isEqualTo(senderName);
     Assertions.assertThat(result.getBoolean("isActive")).isFalse();
@@ -209,7 +197,7 @@ public class SocketIOIntegrationTest extends AbstractIntegrationTest {
 
     sender.emit(LANGUAGE_CHANGE.name(), languageChange);
 
-    var result = languageChangeFuture.orTimeout(500, TimeUnit.MILLISECONDS).get();
+    var result = languageChangeFuture.orTimeout(TIMEOUT, TimeUnit.MILLISECONDS).get();
 
     Assertions.assertThat(result.getString("username")).isEqualTo(senderName);
     Assertions.assertThat(result.getString("language")).isEqualTo(language);
@@ -249,31 +237,12 @@ public class SocketIOIntegrationTest extends AbstractIntegrationTest {
 
     sender.emit(TEXT_UPDATE.name(), textUpdateDto);
 
-    var result = textUpdateFuture.orTimeout(500, TimeUnit.MILLISECONDS).get();
+    var result = textUpdateFuture.orTimeout(TIMEOUT, TimeUnit.MILLISECONDS).get();
 
     Assertions.assertThat(result).usingRecursiveComparison().isEqualTo(textUpdateDto);
 
     sender.disconnect();
     receiver.disconnect();
-  }
-
-  private void clientsConnect(UUID roomUuid, Socket sender, Socket receiver) {
-
-    Mockito.when(roomService.getUser(roomUuid, senderName)).thenReturn(new User());
-    Mockito.when(roomService.getUser(roomUuid, receiverName)).thenReturn(new User());
-    Mockito.when(roomService.getRoomByUuid(roomUuid)).thenReturn(new Room());
-
-    CompletableFuture<JSONObject> senderEditorStateFuture = new CompletableFuture<>();
-    CompletableFuture<JSONObject> receiverEditorStateFuture = new CompletableFuture<>();
-
-
-    receiver.on(NEW_EDITOR_STATE.name(), args -> receiverEditorStateFuture.complete((JSONObject) args[0]));
-    sender.on(NEW_EDITOR_STATE.name(), args -> senderEditorStateFuture.complete((JSONObject) args[0]));
-
-    receiver.connect();
-    sender.connect();
-
-    CompletableFuture.allOf(receiverEditorStateFuture, senderEditorStateFuture);
   }
 
   @Test
@@ -287,9 +256,12 @@ public class SocketIOIntegrationTest extends AbstractIntegrationTest {
     Mockito.when(roomService.getUser(roomUuid, nameToDisconnected)).thenReturn(new User());
     Mockito.when(roomService.getRoomByUuid(roomUuid)).thenReturn(new Room());
 
-    CountDownLatch firstConnect = new CountDownLatch(1);
-    CountDownLatch secondConnect = new CountDownLatch(3);
-    CountDownLatch disconnect = new CountDownLatch(4);
+    int firstConnectCounterLimit = 1;
+    CountDownLatch firstConnect = new CountDownLatch(firstConnectCounterLimit);
+    int secondConnectCounterLimit = 3;
+    CountDownLatch secondConnect = new CountDownLatch(secondConnectCounterLimit);
+    int disconnectCounterLimit = 4;
+    CountDownLatch disconnect = new CountDownLatch(disconnectCounterLimit);
 
     Socket clientStayConnected = initClient(roomUuid, nameStayConnected);
     Socket clientToDisconnect = initClient(roomUuid, nameToDisconnected);
@@ -308,7 +280,7 @@ public class SocketIOIntegrationTest extends AbstractIntegrationTest {
     });
 
     clientToDisconnect.connect();
-    Assertions.assertThat(firstConnect.await(500, TimeUnit.MILLISECONDS)).isTrue();
+    Assertions.assertThat(firstConnect.await(TIMEOUT, TimeUnit.MILLISECONDS)).isTrue();
     Assertions.assertThat(usersStates.get(nameStayConnected)).isNull();
     var satesAfterFirstConnect = usersStates.get(nameToDisconnected).getJSONArray("usersStates");
     Assertions.assertThat(satesAfterFirstConnect.length()).isEqualTo(1);
@@ -318,12 +290,12 @@ public class SocketIOIntegrationTest extends AbstractIntegrationTest {
     Assertions.assertThat(janeStateAfterConnect.getBoolean("isAdmin")).isFalse();
 
     clientStayConnected.connect();
-    Assertions.assertThat(secondConnect.await(500, TimeUnit.MILLISECONDS)).isTrue();
+    Assertions.assertThat(secondConnect.await(TIMEOUT, TimeUnit.MILLISECONDS)).isTrue();
     Assertions.assertThat(usersStates.get(nameStayConnected).getJSONArray("usersStates").length()).isEqualTo(2);
     Assertions.assertThat(usersStates.get(nameToDisconnected).getJSONArray("usersStates").length()).isEqualTo(2);
 
     clientToDisconnect.disconnect();
-    Assertions.assertThat(disconnect.await(500, TimeUnit.MILLISECONDS)).isTrue();
+    Assertions.assertThat(disconnect.await(TIMEOUT, TimeUnit.MILLISECONDS)).isTrue();
     Assertions.assertThat(usersStates.get(nameToDisconnected).getJSONArray("usersStates").length()).isEqualTo(2);
 
     var satesAfterDisconnect = usersStates.get(nameStayConnected).getJSONArray("usersStates");
@@ -334,5 +306,34 @@ public class SocketIOIntegrationTest extends AbstractIntegrationTest {
     Assertions.assertThat(johnState.getBoolean("isAdmin")).isFalse();
 
     clientStayConnected.disconnect();
+  }
+
+  private Socket initClient(UUID roomUuid, String userName) throws URISyntaxException {
+    IO.Options options = new IO.Options();
+    options.reconnection = false;
+    options.forceNew = true;
+
+    return IO.socket(
+        "http://localhost:9092/ws/room/connect?roomUuid=%s&user=%s".formatted(roomUuid, userName),
+        options
+    );
+  }
+
+  private void clientsConnect(UUID roomUuid, Socket sender, Socket receiver) {
+    Mockito.when(roomService.getUser(roomUuid, senderName)).thenReturn(new User());
+    Mockito.when(roomService.getUser(roomUuid, receiverName)).thenReturn(new User());
+    Mockito.when(roomService.getRoomByUuid(roomUuid)).thenReturn(new Room());
+
+    CompletableFuture<JSONObject> senderEditorStateFuture = new CompletableFuture<>();
+    CompletableFuture<JSONObject> receiverEditorStateFuture = new CompletableFuture<>();
+
+
+    receiver.on(NEW_EDITOR_STATE.name(), args -> receiverEditorStateFuture.complete((JSONObject) args[0]));
+    sender.on(NEW_EDITOR_STATE.name(), args -> senderEditorStateFuture.complete((JSONObject) args[0]));
+
+    receiver.connect();
+    sender.connect();
+    receiverEditorStateFuture.orTimeout(TIMEOUT, TimeUnit.MILLISECONDS);
+    senderEditorStateFuture.orTimeout(TIMEOUT, TimeUnit.MILLISECONDS);
   }
 }
