@@ -2,7 +2,7 @@ import React from "react";
 import styles from "./Button.module.scss";
 
 interface ButtonProps {
-  label: string;
+  label?: string;
   toggleLabel?: string;
   onClick?: () => void;
   toggle?: boolean;

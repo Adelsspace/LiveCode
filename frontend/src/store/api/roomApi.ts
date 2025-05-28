@@ -7,11 +7,10 @@ import {
   WebSocketUrlDto,
 } from "../../types/api.types";
 
-// const BASE_URL = "http://localhost:8080/api"; // для локальной разработки
-
+// const BASE_URL = "http://localhost/api"; // для локальной разработки
 export const roomApi = createApi({
   reducerPath: "roomApi",
-  // baseQuery: fetchBaseQuery({ baseUrl: BASE_URL }),  // для локальной разработки
+  // baseQuery: fetchBaseQuery({ baseUrl: BASE_URL }), // для локальной разработки
   baseQuery: fetchBaseQuery({ baseUrl: "/api" }),
   endpoints: (builder) => ({
     createRoom: builder.mutation<AdminTokenDto, CreateRoomRequest>({

@@ -1,4 +1,4 @@
-import { Dropdown } from "../../components/index";
+import { Button, Dropdown } from "../../components/index";
 import {
   EditorFontSize,
   EditorTheme,
@@ -16,6 +16,8 @@ interface EditorControlsProps {
   onThemeChange: (theme: EditorTheme) => void;
   onFontSizeChange: (size: EditorFontSize) => void;
   isAdmin?: boolean;
+  isChatVisible: boolean;
+  toggleChatVisibility: () => void;
 }
 
 const editorLanguages: EditorLanguage[] = [
@@ -34,6 +36,8 @@ export const EditorControls = ({
   onThemeChange,
   onFontSizeChange,
   isAdmin,
+  isChatVisible,
+  toggleChatVisibility,
 }: EditorControlsProps) => {
   const dispatch = useAppDispatch();
 
@@ -74,6 +78,14 @@ export const EditorControls = ({
       />
       <ThemeToggle />
       {isAdmin && <div className={styles.adminBadge}>Режим администратора</div>}
+      {isAdmin && (
+        <Button
+          toggle={isChatVisible}
+          label={"Показать комментарии"}
+          toggleLabel={"Скрыть комментарии"}
+          onClick={toggleChatVisibility}
+        />
+      )}
     </div>
   );
 };
