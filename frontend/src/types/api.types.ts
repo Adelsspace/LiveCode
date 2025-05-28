@@ -65,3 +65,15 @@ export interface WebSocketUrlDto {
    */
   wsConnectUrl?: string;
 }
+
+export interface CommentDto {
+  content: string;
+  roomUuid: string;
+  author: string | null;
+  createdAt: string;
+  isLlm: boolean;
+}
+
+export interface CommentListResponse {
+  items: CommentDto[];
+}

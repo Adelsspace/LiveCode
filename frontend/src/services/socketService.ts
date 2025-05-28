@@ -8,6 +8,7 @@ import {
   setLanguageChange,
   setTextUpdate,
   setUserActivityByUsername,
+  setCommentsUpdated,
 } from "../store/slices/roomSlice";
 import { roomApi } from "../store/api/roomApi";
 import type { ThunkDispatch, UnknownAction } from "@reduxjs/toolkit";
@@ -81,7 +82,9 @@ class SocketService {
         dispatch(setEditorState(data));
       }
     );
-
+    this.socket.on("NEW_COMMENT", () => {
+      dispatch(setCommentsUpdated(true));
+    });
     this.socket.on(
       "TEXT_SELECTION",
       (data: {

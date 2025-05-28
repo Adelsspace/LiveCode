@@ -2,7 +2,6 @@ package ru.hh.blokshnote.service;
 
 import java.util.List;
 import java.util.UUID;
-
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -13,6 +12,7 @@ import ru.hh.blokshnote.dto.comment.response.RoomCommentsResponse;
 import ru.hh.blokshnote.entity.Comment;
 import ru.hh.blokshnote.entity.Room;
 import ru.hh.blokshnote.entity.User;
+import ru.hh.blokshnote.handler.RoomSocketHandler;
 import ru.hh.blokshnote.repository.CommentRepository;
 import ru.hh.blokshnote.repository.UserRepository;
 import ru.hh.blokshnote.utility.security.RoomSecurityUtils;
@@ -22,15 +22,18 @@ public class CommentService {
   private final UserRepository userRepository;
   private final CommentRepository commentRepository;
   private final RoomService roomService;
+  private final RoomSocketHandler roomSocketHandler;
 
   public CommentService(
       UserRepository userRepository,
       CommentRepository commentRepository,
-      RoomService roomService
+      RoomService roomService,
+      RoomSocketHandler roomSocketHandler
   ) {
     this.userRepository = userRepository;
     this.commentRepository = commentRepository;
     this.roomService = roomService;
+    this.roomSocketHandler = roomSocketHandler;
   }
 
   @Transactional
@@ -38,13 +41,23 @@ public class CommentService {
     Room room = roomService.getRoomByUuid(roomUuid);
     RoomSecurityUtils.verifyAdminToken(room, adminToken);
 
+    if (request.content() == null || request.content().trim().isEmpty()) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Comment content cannot be empty");
+    }
+
+    if (request.content().length() > 10000) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Comment is too long, maximum 10000 characters allowed");
+    }
+
     String username = request.author();
     String content = request.content();
+
     User admin = userRepository
         .findByNameAndRoom(username, room)
         .orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN, "Admin with this username not found in room"));
     Comment comment = new Comment(content, room, admin, false);
     commentRepository.save(comment);
+    roomSocketHandler.broadcastNewCommentToAdmins(roomUuid);
     return CommentDto.fromEntity(comment);
   }
 
@@ -62,6 +75,7 @@ public class CommentService {
   public CommentDto createReviewComment(Room room, String content) {
     Comment comment = new Comment(content, room, null, true);
     commentRepository.save(comment);
+    roomSocketHandler.broadcastNewCommentToAdmins(room.getRoomUuid());
     return CommentDto.fromEntity(comment);
   }
 }

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
   changeEditorFontSize,
   changeEditorTheme,
@@ -11,6 +11,7 @@ import { Logo } from "../Logo/Logo";
 import { UsersList } from "../UsersList/UsersList";
 import styles from "./CodeEditor.module.scss";
 import { useAppSelector } from "../../hooks/reduxHooks";
+import { Chat } from "../Chat/Chat";
 
 interface CodeEditorProps {
   isAdmin: boolean;
@@ -24,6 +25,10 @@ export const CodeEditor = ({ isAdmin }: CodeEditorProps) => {
   );
   const { text, language } = useAppSelector((state) => state.room.editorState);
 
+  const [editorWidth, setEditorWidth] = useState(67);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [isChatVisible, setIsChatVisible] = useState(true);
+
   const handleThemeChange = (newTheme: EditorTheme) => {
     setEditorTheme(newTheme);
     changeEditorTheme(newTheme);
@@ -33,6 +38,35 @@ export const CodeEditor = ({ isAdmin }: CodeEditorProps) => {
     setEditorFontSize(newFontSize);
     changeEditorFontSize(newFontSize);
   };
+
+  const handleMouseMove = (event: MouseEvent) => {
+    if (containerRef.current) {
+      const containerWidth = containerRef.current.clientWidth;
+      const newWidth =
+        ((event.clientX - containerRef.current.getBoundingClientRect().left) /
+          containerWidth) *
+        100;
+
+      if (newWidth < 26) {
+        setEditorWidth(26);
+      } else if (newWidth > 72) {
+        setEditorWidth(72);
+      } else {
+        setEditorWidth(newWidth);
+      }
+    }
+  };
+
+  const handleMouseUp = () => {
+    document.removeEventListener("mousemove", handleMouseMove);
+    document.removeEventListener("mouseup", handleMouseUp);
+  };
+
+  const handleMouseDown = () => {
+    document.addEventListener("mousemove", handleMouseMove);
+    document.addEventListener("mouseup", handleMouseUp);
+  };
+
   return (
     <div>
       <header className={styles.header}>
@@ -40,18 +74,49 @@ export const CodeEditor = ({ isAdmin }: CodeEditorProps) => {
         <UsersList />
       </header>
 
-      <MonacoEditor
-        initialCode={text}
-        editorLanguage={language}
-        editorTheme={editorTheme}
-        editorFontSize={editorFontSize}
-      />
+      <div
+        className={styles.container}
+        ref={containerRef}
+        style={{
+          gridTemplateColumns:
+            isAdmin && isChatVisible
+              ? `${editorWidth}% 5px ${100 - editorWidth}%`
+              : "100%",
+        }}
+      >
+        <div className={styles.editor}>
+          <MonacoEditor
+            initialCode={text}
+            editorLanguage={language}
+            editorTheme={editorTheme}
+            editorFontSize={editorFontSize}
+          />
+        </div>
+
+        {isAdmin && isChatVisible && (
+          <>
+            <div className={styles.separator} onMouseDown={handleMouseDown}>
+              <div className={styles.dots}>
+                <div className={styles.dot}></div>
+                <div className={styles.dot}></div>
+                <div className={styles.dot}></div>
+              </div>
+            </div>
+            <div className={styles.chat}>
+              <Chat />
+            </div>
+          </>
+        )}
+      </div>
+
       <EditorControls
         editorTheme={editorTheme}
         editorFontSize={editorFontSize}
         onThemeChange={handleThemeChange}
         onFontSizeChange={handleFontSizeChange}
         isAdmin={isAdmin}
+        isChatVisible={isChatVisible}
+        toggleChatVisibility={() => setIsChatVisible((prev) => !prev)}
       />
     </div>
   );

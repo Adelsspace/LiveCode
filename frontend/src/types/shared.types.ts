@@ -18,6 +18,7 @@ export interface User {
   username: string;
   isActive: boolean;
   isAdmin: boolean;
+  color: string;
 }
 
 export interface EditorState {
