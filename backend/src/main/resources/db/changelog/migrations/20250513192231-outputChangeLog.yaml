@@ -10,4 +10,3 @@ databaseChangeLog:
             name: editor_language
             type: varchar(255)
         tableName: rooms
-
