@@ -24,14 +24,15 @@ services:
     image: code-backend
     container_name: bloksh-backend
     restart: always
-#    ports:
-#      - "8080:8080"
+    ports:
+      - "8080:8080"
 #      - "9092:9092"
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/bloksh-db
       SPRING_DATASOURCE_USERNAME: hh-dev
       SPRING_DATASOURCE_PASSWORD: dev-password
       SOCKETIO_PROTOCOL: ws
+      LLM_KEY: ${LLM_KEY:-no-key}
     depends_on:
       postgres:
         condition: service_healthy
