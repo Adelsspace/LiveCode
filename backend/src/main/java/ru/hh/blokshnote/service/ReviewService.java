@@ -34,10 +34,6 @@ public class ReviewService {
     String editorText = room.getEditorText();
     String prompt = request.prompt().strip();
 
-    if (prompt.isEmpty()) {
-      prompt = "Проверь код на наличие ошибок";
-    }
-
     return llmService.getReviewResponseAsync(editorText, prompt)
         .thenApply(content -> commentService.createReviewComment(room, content));
   }

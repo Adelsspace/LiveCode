@@ -6,6 +6,7 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 
 @Service
 public class LlmService {
@@ -15,6 +16,10 @@ public class LlmService {
   private final DeepSeekChatModel chatModel;
   private static final String PLACEHOLDER_KEY = "no-key";
   private static final String PLACEHOLDER_RESPONSE = "LLM reviews are disabled since no llm key is provided";
+
+  private static final long TIMEOUT_SECONDS = 20L;
+  private static final String TIMEOUT_RESPONSE = "Нейросеть не смогла дать ответ. Таймаут";
+
 
   private static final String PLACEHOLDER_PROMPT = "Analyze the solution to the given problem.";
   private static final String INSTRUCTIONS = """
@@ -38,7 +43,9 @@ public class LlmService {
     }
 
     String combined = prompt + "\n" + INSTRUCTIONS + "\n\n" + editorText;
-    String response = chatModel.call(combined);
-    return CompletableFuture.completedFuture(response);
+    return CompletableFuture
+        .supplyAsync(() -> chatModel.call(combined))
+        .orTimeout(TIMEOUT_SECONDS, TimeUnit.SECONDS)
+        .exceptionally(ex -> TIMEOUT_RESPONSE);
   }
 }
