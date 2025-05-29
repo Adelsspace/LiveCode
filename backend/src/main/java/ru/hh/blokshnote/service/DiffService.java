@@ -21,7 +21,7 @@ public class DiffService {
     this.diffMatchPatch = new DiffMatchPatch();
   }
 
-  @Transactional(propagation = Propagation.REQUIRES_NEW)
+  @Transactional
   public void makeDiff(Room oldRoom, String newState) {
     String oldState = oldRoom.getEditorText();
     List<DiffMatchPatch.Patch> patches = diffMatchPatch.patchMake(oldState, newState);
