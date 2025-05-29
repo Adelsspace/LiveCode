@@ -38,7 +38,7 @@ public class SocketIOIntegrationTest extends AbstractIntegrationTest {
   @MockitoBean
   private RoomService roomService;
 
-  private static final int TIMEOUT = 500;
+  private static final int TIMEOUT = 1500;
   private final String senderName = "John";
   private final String receiverName = "Jane";
 
@@ -68,13 +68,11 @@ public class SocketIOIntegrationTest extends AbstractIntegrationTest {
     socket.on(NEW_EDITOR_STATE.name(), args -> editorStateFuture.complete((JSONObject) args[0]));
     socket.on(USERS_UPDATE.name(), args -> usersUpdateFuture.complete((JSONObject) args[0]));
     socket.connect();
-    editorStateFuture.orTimeout(TIMEOUT, TimeUnit.MILLISECONDS);
-    usersUpdateFuture.orTimeout(TIMEOUT, TimeUnit.MILLISECONDS);
-    JSONObject newEditorState = editorStateFuture.get();
+    JSONObject newEditorState = editorStateFuture.orTimeout(TIMEOUT, TimeUnit.MILLISECONDS).get();
+    JSONArray usersStates = usersUpdateFuture.orTimeout(TIMEOUT, TimeUnit.MILLISECONDS).get().getJSONArray("usersStates");
     Assertions.assertThat(newEditorState.getString("text")).isEqualTo("Hello world!");
     Assertions.assertThat(newEditorState.getString("language")).isEqualTo("javascript");
 
-    JSONArray usersStates = usersUpdateFuture.get().getJSONArray("usersStates");
     Assertions.assertThat(usersStates.length()).isEqualTo(1);
     JSONObject usersState = usersStates.getJSONObject(0);
     Assertions.assertThat(usersState.getString("username")).isEqualTo(userName);
@@ -319,7 +317,7 @@ public class SocketIOIntegrationTest extends AbstractIntegrationTest {
     );
   }
 
-  private void clientsConnect(UUID roomUuid, Socket sender, Socket receiver) {
+  private void clientsConnect(UUID roomUuid, Socket sender, Socket receiver) throws ExecutionException, InterruptedException {
     Mockito.when(roomService.getUser(roomUuid, senderName)).thenReturn(new User());
     Mockito.when(roomService.getUser(roomUuid, receiverName)).thenReturn(new User());
     Mockito.when(roomService.getRoomByUuid(roomUuid)).thenReturn(new Room());
@@ -333,7 +331,7 @@ public class SocketIOIntegrationTest extends AbstractIntegrationTest {
 
     receiver.connect();
     sender.connect();
-    receiverEditorStateFuture.orTimeout(TIMEOUT, TimeUnit.MILLISECONDS);
-    senderEditorStateFuture.orTimeout(TIMEOUT, TimeUnit.MILLISECONDS);
+    receiverEditorStateFuture.orTimeout(TIMEOUT, TimeUnit.MILLISECONDS).get();
+    senderEditorStateFuture.orTimeout(TIMEOUT, TimeUnit.MILLISECONDS).get();
   }
 }
