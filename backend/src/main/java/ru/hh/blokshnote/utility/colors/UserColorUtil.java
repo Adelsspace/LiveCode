@@ -1,5 +1,7 @@
 package ru.hh.blokshnote.utility.colors;
 
+import java.util.Set;
+
 public class UserColorUtil {
   private static final String[] COLOR_POOL = {
       "#0bd5c2",
@@ -12,8 +14,18 @@ public class UserColorUtil {
       "#00a329"
   };
 
-  public static String generateUserColor(String username) {
+  public static String generateUserColor(String username, Set<String> usedColors) {
     int hashCode = Math.abs(username.hashCode());
-    return COLOR_POOL[hashCode % COLOR_POOL.length];
+    int initialIdx = hashCode % COLOR_POOL.length;
+
+    for (int i = 0; i < COLOR_POOL.length; i++) {
+      int idx = (initialIdx + i) % COLOR_POOL.length;
+      String color = COLOR_POOL[idx];
+      if (!usedColors.contains(color)) {
+        return color;
+      }
+    }
+
+    return COLOR_POOL[initialIdx];
   }
 }

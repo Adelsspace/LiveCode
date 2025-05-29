@@ -4,7 +4,10 @@ import com.corundumstudio.socketio.AckRequest;
 import com.corundumstudio.socketio.SocketIOClient;
 import com.corundumstudio.socketio.SocketIONamespace;
 import com.corundumstudio.socketio.SocketIOServer;
+import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
@@ -65,8 +68,20 @@ public class RoomSocketHandler {
     UUID roomUuid = UUID.fromString(roomUuidString);
     String userName = client.getHandshakeData().getSingleUrlParam(USER.getLabel());
     LOGGER.info("User with name={} requested connection to room with UUID={}", userName, roomUuidString);
+
+    SocketIONamespace namespace = socketIOServer.getNamespace(WebSocketConfig.ROOM_URI_TEMPLATE);
+    Set<String> usedColors = namespace.getRoomOperations(roomUuidString).getClients()
+        .stream()
+        .map(c -> {
+          UserStateDto state = c.get(USER_STATE_KEY);
+          return state != null ? state.getColor() : null;
+        })
+        .filter(Objects::nonNull)
+        .collect(Collectors.toSet());
+
     User user = roomService.getUser(roomUuid, userName);
-    client.set(USER_STATE_KEY, new UserStateDto(userName, true, user.isAdmin(), UserColorUtil.generateUserColor(userName)));
+    String color = UserColorUtil.generateUserColor(userName, usedColors);
+    client.set(USER_STATE_KEY, new UserStateDto(userName, true, user.isAdmin(), color));
     client.joinRoom(roomUuidString);
 
     sendEditorState(client, roomUuid);
@@ -105,7 +120,8 @@ public class RoomSocketHandler {
   private void editorStateEventHandler(SocketIOClient client, EditorStateDto data, AckRequest ackSender) {
     String roomUuid = client.getHandshakeData().getSingleUrlParam(ROOM_UUID.getLabel());
     LOGGER.info("Updating editor text={} and language={} in room with UUID={}",
-        data.getText(), data.getLanguage(), roomUuid);
+        data.getText(), data.getLanguage(), roomUuid
+    );
     Room room = roomService.updateRoomEditor(UUID.fromString(roomUuid), data);
     broadcastEditorState(client, room);
   }
@@ -192,7 +208,7 @@ public class RoomSocketHandler {
     }
     String roomUuid = String.valueOf(uuidOfRoom);
     LOGGER.info("Broadcasting NEW_COMMENT notification to admins in room {}", roomUuid);
-   namespace.getRoomOperations(roomUuid).getClients()
+    namespace.getRoomOperations(roomUuid).getClients()
         .stream()
         .filter(client -> {
           UserStateDto userState = client.get(USER_STATE_KEY);
