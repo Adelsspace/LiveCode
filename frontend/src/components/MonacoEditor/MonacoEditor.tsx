@@ -101,8 +101,7 @@ const MonacoEditor = ({
   return (
     <div className={styles.editorContainer}>
       <Editor
-        height="75vh"
-        width="90vw"
+        height="78vh"
         language={stateLanguage || editorLanguage}
         theme={editorTheme}
         value={localCode}
