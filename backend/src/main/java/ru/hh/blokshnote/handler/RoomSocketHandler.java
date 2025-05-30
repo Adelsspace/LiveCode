@@ -33,7 +33,6 @@ import static ru.hh.blokshnote.utility.WsMessageType.USERS_UPDATE;
 import static ru.hh.blokshnote.utility.WsMessageType.USER_ACTIVITY;
 import static ru.hh.blokshnote.utility.WsPathParam.ROOM_UUID;
 import static ru.hh.blokshnote.utility.WsPathParam.USER;
-import ru.hh.blokshnote.utility.colors.UserColorUtil;
 
 @Component
 public class RoomSocketHandler {
@@ -65,8 +64,9 @@ public class RoomSocketHandler {
     UUID roomUuid = UUID.fromString(roomUuidString);
     String userName = client.getHandshakeData().getSingleUrlParam(USER.getLabel());
     LOGGER.info("User with name={} requested connection to room with UUID={}", userName, roomUuidString);
+
     User user = roomService.getUser(roomUuid, userName);
-    client.set(USER_STATE_KEY, new UserStateDto(userName, true, user.isAdmin(), UserColorUtil.generateUserColor(userName)));
+    client.set(USER_STATE_KEY, new UserStateDto(userName, true, user.isAdmin(), user.getColor()));
     client.joinRoom(roomUuidString);
 
     sendEditorState(client, roomUuid);
@@ -105,7 +105,8 @@ public class RoomSocketHandler {
   private void editorStateEventHandler(SocketIOClient client, EditorStateDto data, AckRequest ackSender) {
     String roomUuid = client.getHandshakeData().getSingleUrlParam(ROOM_UUID.getLabel());
     LOGGER.info("Updating editor text={} and language={} in room with UUID={}",
-        data.getText(), data.getLanguage(), roomUuid);
+        data.getText(), data.getLanguage(), roomUuid
+    );
     Room room = roomService.updateRoomEditor(UUID.fromString(roomUuid), data);
     broadcastEditorState(client, room);
   }
@@ -192,7 +193,7 @@ public class RoomSocketHandler {
     }
     String roomUuid = String.valueOf(uuidOfRoom);
     LOGGER.info("Broadcasting NEW_COMMENT notification to admins in room {}", roomUuid);
-   namespace.getRoomOperations(roomUuid).getClients()
+    namespace.getRoomOperations(roomUuid).getClients()
         .stream()
         .filter(client -> {
           UserStateDto userState = client.get(USER_STATE_KEY);

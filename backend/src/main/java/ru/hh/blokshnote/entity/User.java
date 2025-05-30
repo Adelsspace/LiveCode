@@ -27,6 +27,9 @@ public class User {
   @JoinColumn(name = "room_id", nullable = false)
   private Room room;
 
+  @Column(name = "color", nullable = false)
+  private String color;
+
   public User() {
   }
 
@@ -62,5 +65,13 @@ public class User {
 
   public void setRoom(Room room) {
     this.room = room;
+  }
+
+  public String getColor() {
+    return color;
+  }
+
+  public void setColor(String color) {
+    this.color = color;
   }
 }
