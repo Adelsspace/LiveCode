@@ -1,5 +1,11 @@
 package ru.hh.blokshnote.service;
 
+import java.time.Duration;
+import java.time.Instant;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -16,12 +22,8 @@ import ru.hh.blokshnote.entity.Room;
 import ru.hh.blokshnote.entity.User;
 import ru.hh.blokshnote.repository.RoomRepository;
 import ru.hh.blokshnote.repository.UserRepository;
+import ru.hh.blokshnote.utility.colors.UserColorUtil;
 import ru.hh.blokshnote.utility.security.RoomSecurityUtils;
-
-import java.time.Duration;
-import java.time.Instant;
-import java.util.Optional;
-import java.util.UUID;
 
 @Service
 public class RoomService {
@@ -68,6 +70,7 @@ public class RoomService {
     adminUser.setName(request.getUsername());
     adminUser.setAdmin(true);
     adminUser.setRoom(room);
+    adminUser.setColor(UserColorUtil.generateUserColor(request.getUsername(), Set.of()));
     userRepository.save(adminUser);
 
     return room;
@@ -83,10 +86,13 @@ public class RoomService {
           throw new ResponseStatusException(HttpStatus.CONFLICT, "User with this name already exists in the room");
         });
 
+    String color = getColorForNewUser(request.getUsername(), room);
+
     User user = new User();
     user.setName(request.getUsername());
     user.setAdmin(false);
     user.setRoom(room);
+    user.setColor(color);
     return userRepository.save(user);
   }
 
@@ -99,10 +105,14 @@ public class RoomService {
         .ifPresent(user -> {
           throw new ResponseStatusException(HttpStatus.CONFLICT, "User with this name already exists in the room");
         });
+
+    String color = getColorForNewUser(request.getUsername(), room);
+
     User user = new User();
     user.setName(request.getUsername());
     user.setAdmin(true);
     user.setRoom(room);
+    user.setColor(color);
     return userRepository.save(user);
   }
 
@@ -153,8 +163,18 @@ public class RoomService {
     return userRepository.findByNameAndRoomRoomUuid(userName, roomUuid)
         .orElseThrow(() -> {
           LOGGER.info("User with name={} in Room with UUID={} not found", userName, roomUuid);
-          return new ResponseStatusException(HttpStatus.NOT_FOUND,
-              "User with name=%s in Room with UUID=%s not found".formatted(userName, roomUuid));
+          return new ResponseStatusException(
+              HttpStatus.NOT_FOUND,
+              "User with name=%s in Room with UUID=%s not found".formatted(userName, roomUuid)
+          );
         });
+  }
+
+  @Transactional(readOnly = true)
+  public String getColorForNewUser(String username, Room room) {
+    Set<String> userColors = userRepository.findAllByRoom(room).stream()
+        .map(User::getColor)
+        .collect(Collectors.toSet());
+    return UserColorUtil.generateUserColor(username, userColors);
   }
 }

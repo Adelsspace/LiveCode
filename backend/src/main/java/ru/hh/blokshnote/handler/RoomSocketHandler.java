@@ -5,8 +5,6 @@ import com.corundumstudio.socketio.SocketIOClient;
 import com.corundumstudio.socketio.SocketIONamespace;
 import com.corundumstudio.socketio.SocketIOServer;
 import java.util.List;
-import java.util.Objects;
-import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
@@ -35,7 +33,6 @@ import static ru.hh.blokshnote.utility.WsMessageType.USERS_UPDATE;
 import static ru.hh.blokshnote.utility.WsMessageType.USER_ACTIVITY;
 import static ru.hh.blokshnote.utility.WsPathParam.ROOM_UUID;
 import static ru.hh.blokshnote.utility.WsPathParam.USER;
-import ru.hh.blokshnote.utility.colors.UserColorUtil;
 
 @Component
 public class RoomSocketHandler {
@@ -68,19 +65,8 @@ public class RoomSocketHandler {
     String userName = client.getHandshakeData().getSingleUrlParam(USER.getLabel());
     LOGGER.info("User with name={} requested connection to room with UUID={}", userName, roomUuidString);
 
-    SocketIONamespace namespace = socketIOServer.getNamespace(WebSocketConfig.ROOM_URI_TEMPLATE);
-    Set<String> usedColors = namespace.getRoomOperations(roomUuidString).getClients()
-        .stream()
-        .map(c -> {
-          UserStateDto state = c.get(USER_STATE_KEY);
-          return state != null ? state.getColor() : null;
-        })
-        .filter(Objects::nonNull)
-        .collect(Collectors.toSet());
-
     User user = roomService.getUser(roomUuid, userName);
-    String color = UserColorUtil.generateUserColor(userName, usedColors);
-    client.set(USER_STATE_KEY, new UserStateDto(userName, true, user.isAdmin(), color));
+    client.set(USER_STATE_KEY, new UserStateDto(userName, true, user.isAdmin(), user.getColor()));
     client.joinRoom(roomUuidString);
 
     sendEditorState(client, roomUuid);
