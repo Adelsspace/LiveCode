@@ -21,3 +21,6 @@ databaseChangeLog:
   - include:
       file: migrations/add_color_to_user.yaml
       relativeToChangelogFile: true
+  - include:
+      file: migrations/close_room.yaml
+      relativeToChangelogFile: true
