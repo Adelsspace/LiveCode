@@ -24,9 +24,11 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
+import static ru.hh.blokshnote.utility.WsMessageType.CLOSE_ROOM;
 import static ru.hh.blokshnote.utility.WsMessageType.CURSOR_POSITION;
 import static ru.hh.blokshnote.utility.WsMessageType.LANGUAGE_CHANGE;
 import static ru.hh.blokshnote.utility.WsMessageType.NEW_EDITOR_STATE;
+import static ru.hh.blokshnote.utility.WsMessageType.OPEN_ROOM;
 import static ru.hh.blokshnote.utility.WsMessageType.TEXT_SELECTION;
 import static ru.hh.blokshnote.utility.WsMessageType.TEXT_UPDATE;
 import static ru.hh.blokshnote.utility.WsMessageType.USERS_UPDATE;
@@ -41,6 +43,8 @@ public class SocketIOIntegrationTest extends AbstractIntegrationTest {
   private static final int TIMEOUT = 1500;
   private final String senderName = "John";
   private final String receiverName = "Jane";
+  private final String adminName = "John";
+  private final String nonAdminName = "Jane";
 
   @BeforeAll
   static void startServer() {
@@ -306,6 +310,169 @@ public class SocketIOIntegrationTest extends AbstractIntegrationTest {
     clientStayConnected.disconnect();
   }
 
+  @Test
+  public void closeRoomByAdminTest() throws URISyntaxException, JSONException, ExecutionException, InterruptedException {
+    UUID roomUuid = UUID.randomUUID();
+    Socket adminClient = initClient(roomUuid, adminName);
+    Socket nonAdminClient = initClient(roomUuid, nonAdminName);
+    clientsConnect(roomUuid, adminClient, nonAdminClient);
+
+    CompletableFuture<JSONObject> adminCloseRoomFuture = new CompletableFuture<>();
+    CompletableFuture<JSONObject> nonAdminCloseRoomFuture = new CompletableFuture<>();
+    adminClient.on(CLOSE_ROOM.name(), args -> adminCloseRoomFuture.complete((JSONObject) args[0]));
+    nonAdminClient.on(CLOSE_ROOM.name(), args -> nonAdminCloseRoomFuture.complete((JSONObject) args[0]));
+
+    JSONObject closeRoomDto = new JSONObject();
+    closeRoomDto.put("username", adminName);
+
+    adminClient.emit(CLOSE_ROOM.name(), closeRoomDto);
+
+    var adminResult = nonAdminCloseRoomFuture.orTimeout(TIMEOUT, TimeUnit.MILLISECONDS).get();
+    var nonAdminResult = nonAdminCloseRoomFuture.orTimeout(TIMEOUT, TimeUnit.MILLISECONDS).get();
+
+    Assertions.assertThat(adminResult).usingRecursiveComparison().isEqualTo(closeRoomDto);
+    Assertions.assertThat(nonAdminResult).usingRecursiveComparison().isEqualTo(closeRoomDto);
+    Assertions.assertThat(nonAdminClient.connected()).isFalse();
+    Assertions.assertThat(adminClient.connected()).isTrue();
+
+    adminClient.disconnect();
+    nonAdminClient.disconnect();
+  }
+
+  @Test
+  public void closeRoomByNonAdminTest() throws URISyntaxException, JSONException, ExecutionException, InterruptedException {
+    UUID roomUuid = UUID.randomUUID();
+    Socket adminClient = initClient(roomUuid, adminName);
+    Socket nonAdminClient = initClient(roomUuid, nonAdminName);
+    clientsConnect(roomUuid, adminClient, nonAdminClient);
+
+    CompletableFuture<JSONObject> adminCloseRoomFuture = new CompletableFuture<>();
+    CompletableFuture<JSONObject> nonAdminCloseRoomFuture = new CompletableFuture<>();
+    adminClient.on(CLOSE_ROOM.name(), args -> adminCloseRoomFuture.complete((JSONObject) args[0]));
+    nonAdminClient.on(CLOSE_ROOM.name(), args -> nonAdminCloseRoomFuture.complete((JSONObject) args[0]));
+
+    JSONObject closeRoomDto = new JSONObject();
+    closeRoomDto.put("username", adminName);
+
+    nonAdminClient.emit(CLOSE_ROOM.name(), closeRoomDto);
+
+    Assertions.assertThatThrownBy(() -> nonAdminCloseRoomFuture.orTimeout(TIMEOUT, TimeUnit.MILLISECONDS).get())
+        .isInstanceOf(ExecutionException.class);
+    Assertions.assertThatThrownBy(() -> adminCloseRoomFuture.orTimeout(TIMEOUT, TimeUnit.MILLISECONDS).get())
+        .isInstanceOf(ExecutionException.class);
+    Assertions.assertThat(nonAdminClient.connected()).isTrue();
+    Assertions.assertThat(adminClient.connected()).isTrue();
+
+    adminClient.disconnect();
+    nonAdminClient.disconnect();
+  }
+
+  @Test
+  public void openRoomByAdminTest() throws URISyntaxException, JSONException, ExecutionException, InterruptedException {
+    UUID roomUuid = UUID.randomUUID();
+
+    var adminUser = new User();
+    adminUser.setAdmin(true);
+    Mockito.when(roomService.getUser(roomUuid, adminName)).thenReturn(adminUser);
+    Mockito.when(roomService.getRoomByUuid(roomUuid)).thenReturn(new Room());
+
+    int adminConnectCounterLimit = 1;
+    CountDownLatch adminConnect = new CountDownLatch(adminConnectCounterLimit);
+    CompletableFuture<JSONObject> adminOpenRoomFuture = new CompletableFuture<>();
+
+    Socket adminClient = initClient(roomUuid, adminName);
+
+    adminClient.on(USERS_UPDATE.name(), args -> adminConnect.countDown());
+
+    adminClient.on(OPEN_ROOM.name(), args -> adminOpenRoomFuture.complete((JSONObject) args[0]));
+
+    adminClient.connect();
+    Assertions.assertThat(adminConnect.await(TIMEOUT, TimeUnit.MILLISECONDS)).isTrue();
+
+    JSONObject openRoomDto = new JSONObject();
+    openRoomDto.put("username", adminName);
+    adminClient.emit(OPEN_ROOM.name(), openRoomDto);
+
+    var adminResult = adminOpenRoomFuture.orTimeout(TIMEOUT, TimeUnit.MILLISECONDS).get();
+
+    Assertions.assertThat(adminResult).usingRecursiveComparison().isEqualTo(openRoomDto);
+
+    adminClient.disconnect();
+  }
+
+  @Test
+  public void openRoomByNonAdminTest() throws URISyntaxException, JSONException, InterruptedException {
+    UUID roomUuid = UUID.randomUUID();
+
+    Mockito.when(roomService.getUser(roomUuid, nonAdminName)).thenReturn(new User());
+    Mockito.when(roomService.getRoomByUuid(roomUuid)).thenReturn(new Room());
+
+    int nonAdminConnectCounterLimit = 1;
+    CountDownLatch nonAdminConnect = new CountDownLatch(nonAdminConnectCounterLimit);
+    CompletableFuture<JSONObject> nonAdminOpenRoomFuture = new CompletableFuture<>();
+
+    Socket nonAdminClient = initClient(roomUuid, nonAdminName);
+
+    nonAdminClient.on(USERS_UPDATE.name(), args -> nonAdminConnect.countDown());
+
+    nonAdminClient.on(OPEN_ROOM.name(), args -> nonAdminOpenRoomFuture.complete((JSONObject) args[0]));
+
+    nonAdminClient.connect();
+    Assertions.assertThat(nonAdminConnect.await(TIMEOUT, TimeUnit.MILLISECONDS)).isTrue();
+
+    JSONObject openRoomDto = new JSONObject();
+    openRoomDto.put("username", nonAdminName);
+    nonAdminClient.emit(OPEN_ROOM.name(), openRoomDto);
+
+    Assertions.assertThatThrownBy(() -> nonAdminOpenRoomFuture.orTimeout(TIMEOUT, TimeUnit.MILLISECONDS).get())
+        .isInstanceOf(ExecutionException.class);
+
+    nonAdminClient.disconnect();
+  }
+
+  @Test
+  public void testConnectionAdminToClosedRoom() throws URISyntaxException, InterruptedException {
+    UUID roomUuid = UUID.randomUUID();
+
+    var adminUser = new User();
+    adminUser.setAdmin(true);
+    Mockito.when(roomService.getUser(roomUuid, adminName)).thenReturn(adminUser);
+    Mockito.when(roomService.getRoomByUuid(roomUuid)).thenReturn(new Room());
+    Mockito.when(roomService.isRoomClosed(roomUuid)).thenReturn(true);
+
+    int adminConnectCounterLimit = 1;
+    CountDownLatch adminConnect = new CountDownLatch(adminConnectCounterLimit);
+
+    Socket adminClient = initClient(roomUuid, adminName);
+
+    adminClient.on(USERS_UPDATE.name(), args -> adminConnect.countDown());
+
+    adminClient.connect();
+    Assertions.assertThat(adminConnect.await(TIMEOUT, TimeUnit.MILLISECONDS)).isTrue();
+    Assertions.assertThat(adminClient.connected()).isTrue();
+    adminClient.disconnect();
+  }
+
+  @Test
+  public void testConnectionNonAdminToClosedRoom() throws URISyntaxException, JSONException, InterruptedException {
+    UUID roomUuid = UUID.randomUUID();
+
+    Mockito.when(roomService.getUser(roomUuid, nonAdminName)).thenReturn(new User());
+    Mockito.when(roomService.isRoomClosed(roomUuid)).thenReturn(true);
+
+    int nonAdminConnectCounterLimit = 1;
+    CountDownLatch nonAdminConnect = new CountDownLatch(nonAdminConnectCounterLimit);
+
+    Socket nonAdminClient = initClient(roomUuid, nonAdminName);
+
+    nonAdminClient.on(USERS_UPDATE.name(), args -> nonAdminConnect.countDown());
+
+    nonAdminClient.connect();
+    Assertions.assertThat(nonAdminConnect.await(TIMEOUT, TimeUnit.MILLISECONDS)).isFalse();
+    Assertions.assertThat(nonAdminClient.connected()).isFalse();
+    nonAdminClient.disconnect();
+  }
+
   private Socket initClient(UUID roomUuid, String userName) throws URISyntaxException {
     IO.Options options = new IO.Options();
     options.reconnection = false;
@@ -318,7 +485,9 @@ public class SocketIOIntegrationTest extends AbstractIntegrationTest {
   }
 
   private void clientsConnect(UUID roomUuid, Socket sender, Socket receiver) throws ExecutionException, InterruptedException {
-    Mockito.when(roomService.getUser(roomUuid, senderName)).thenReturn(new User());
+    var admin = new User();
+    admin.setAdmin(true);
+    Mockito.when(roomService.getUser(roomUuid, senderName)).thenReturn(admin);
     Mockito.when(roomService.getUser(roomUuid, receiverName)).thenReturn(new User());
     Mockito.when(roomService.getRoomByUuid(roomUuid)).thenReturn(new Room());
 
