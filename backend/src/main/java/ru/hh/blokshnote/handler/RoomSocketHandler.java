@@ -169,10 +169,7 @@ public class RoomSocketHandler {
         data.isActive() ? "active" : "inactive"
     );
     SocketIONamespace namespace = client.getNamespace();
-    namespace.getRoomOperations(roomUuid).getClients()
-        .stream()
-        .filter(roomClient -> !roomClient.equals(client))
-        .forEach(roomClient -> roomClient.sendEvent(USER_ACTIVITY.name(), data));
+    namespace.getRoomOperations(roomUuid).sendEvent(USER_ACTIVITY.name(), data);
   }
 
   private void languageChangeEventHandler(SocketIOClient client, LanguageChangeDto data, AckRequest ackSender) {
