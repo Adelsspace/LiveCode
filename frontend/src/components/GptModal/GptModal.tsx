@@ -14,13 +14,18 @@ export const GptModal: React.FC<GptModalProps> = ({
 }) => {
   const [prompt, setPrompt] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [isBubbleVisible, setBubbleVisible] = useState(false);
 
   const handleSubmit = useCallback(
     (e: React.FormEvent<HTMLFormElement>) => {
       e.preventDefault();
       onSubmit(prompt);
+      setBubbleVisible(true);
       setPrompt("");
-      onClose();
+      setTimeout(() => {
+        setBubbleVisible(false);
+        onClose();
+      }, 600);
     },
     [onClose, onSubmit, prompt]
   );
@@ -79,6 +84,9 @@ export const GptModal: React.FC<GptModalProps> = ({
             </button>
           </div>
         </form>
+        {isBubbleVisible && (
+          <div className={styles.bubble}>Запрос отправлен</div>
+        )}
       </div>
     </div>
   );

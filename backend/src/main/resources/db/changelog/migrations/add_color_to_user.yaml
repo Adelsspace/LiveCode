@@ -1,0 +1,30 @@
+databaseChangeLog:
+- logicalFilePath: db/changelog/migrations/add_color_to_user.yaml
+- changeSet:
+    id: 1
+    author: misha
+    changes:
+    - addColumn:
+        tableName: users
+        columns:
+        - column:
+            name: color
+            type: varchar(255)
+- changeSet:
+    id: 2
+    author: misha
+    changes:
+    - update:
+        tableName: users
+        columns:
+        - column:
+            name: color
+            value: #ffa520
+changeSet:
+    id: 3
+    author: misha
+    changes:
+    - addNotNullConstraint:
+        tableName: users
+        columnName: color
+        columnDataType: varchar(255)

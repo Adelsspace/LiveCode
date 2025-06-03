@@ -77,7 +77,7 @@ export const EditorControls = ({
         onSelect={onFontSizeChange}
       />
       <ThemeToggle />
-      {isAdmin && <div className={styles.adminBadge}>Режим администратора</div>}
+
       {isAdmin && (
         <Button
           toggle={isChatVisible}

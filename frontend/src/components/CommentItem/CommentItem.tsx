@@ -1,18 +1,12 @@
 import React, { useState } from "react";
 import styles from "./CommentItem.module.scss";
-import { useAppSelector } from "../../hooks/reduxHooks";
 import { CommentDto } from "../../types/api.types";
-import { User } from "../../types/shared.types";
 
 interface CommentItemProps {
   comment: CommentDto;
 }
 
 export const CommentItem: React.FC<CommentItemProps> = ({ comment }) => {
-  const users = useAppSelector((state) => state.room.users);
-  const user = users.find((u: User) => u.username === comment.author);
-  const color = user?.color || "#000000";
-
   const [isExpanded, setIsExpanded] = useState(false);
 
   const toggleExpand = () => setIsExpanded((prev) => !prev);
@@ -27,7 +21,7 @@ export const CommentItem: React.FC<CommentItemProps> = ({ comment }) => {
   return (
     <div className={styles.comment}>
       <div className={styles.header}>
-        <span className={styles.author} style={{ color }}>
+        <span className={styles.author} style={{ color: comment.color }}>
           {comment.author || "Deepseek"}
         </span>
         {comment.isLlm && <span className={styles.llmBadge}>AI Generated</span>}
