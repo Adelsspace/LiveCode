@@ -1,20 +1,20 @@
 package ru.hh.blokshnote.handler;
 
 import com.corundumstudio.socketio.AckRequest;
+import com.corundumstudio.socketio.ClientOperations;
 import com.corundumstudio.socketio.SocketIOClient;
 import com.corundumstudio.socketio.SocketIONamespace;
 import com.corundumstudio.socketio.SocketIOServer;
-import java.util.List;
-import java.util.UUID;
-import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 import ru.hh.blokshnote.config.WebSocketConfig;
+import ru.hh.blokshnote.dto.websocket.ClosingRoomDto;
 import ru.hh.blokshnote.dto.websocket.CursorPositionDto;
 import ru.hh.blokshnote.dto.websocket.EditorStateDto;
 import ru.hh.blokshnote.dto.websocket.LanguageChangeDto;
+import ru.hh.blokshnote.dto.websocket.OpeningRoomDto;
 import ru.hh.blokshnote.dto.websocket.TextSelectionDto;
 import ru.hh.blokshnote.dto.websocket.TextUpdateDto;
 import ru.hh.blokshnote.dto.websocket.UserActivityDto;
@@ -23,10 +23,17 @@ import ru.hh.blokshnote.dto.websocket.UsersUpdateDto;
 import ru.hh.blokshnote.entity.Room;
 import ru.hh.blokshnote.entity.User;
 import ru.hh.blokshnote.service.RoomService;
+
+import java.util.List;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
+import static ru.hh.blokshnote.utility.WsMessageType.CLOSE_ROOM;
 import static ru.hh.blokshnote.utility.WsMessageType.CURSOR_POSITION;
 import static ru.hh.blokshnote.utility.WsMessageType.LANGUAGE_CHANGE;
 import static ru.hh.blokshnote.utility.WsMessageType.NEW_COMMENT;
 import static ru.hh.blokshnote.utility.WsMessageType.NEW_EDITOR_STATE;
+import static ru.hh.blokshnote.utility.WsMessageType.OPEN_ROOM;
 import static ru.hh.blokshnote.utility.WsMessageType.TEXT_SELECTION;
 import static ru.hh.blokshnote.utility.WsMessageType.TEXT_UPDATE;
 import static ru.hh.blokshnote.utility.WsMessageType.USERS_UPDATE;
@@ -57,6 +64,8 @@ public class RoomSocketHandler {
     namespace.addEventListener(USER_ACTIVITY.name(), UserActivityDto.class, this::userActivityEventHandler);
     namespace.addEventListener(LANGUAGE_CHANGE.name(), LanguageChangeDto.class, this::languageChangeEventHandler);
     namespace.addEventListener(TEXT_UPDATE.name(), TextUpdateDto.class, this::textUpdateEventHandler);
+    namespace.addEventListener(CLOSE_ROOM.name(), ClosingRoomDto.class, this::closeRoomEventHandler);
+    namespace.addEventListener(OPEN_ROOM.name(), OpeningRoomDto.class, this::openRoomEventHandler);
   }
 
   private void connectHandler(SocketIOClient client) {
@@ -66,6 +75,12 @@ public class RoomSocketHandler {
     LOGGER.info("User with name={} requested connection to room with UUID={}", userName, roomUuidString);
 
     User user = roomService.getUser(roomUuid, userName);
+    boolean isRoomClosed = roomService.isRoomClosed(roomUuid);
+    if (isRoomClosed && !user.isAdmin()) {
+      LOGGER.info("Room with uuid={} is closed. Only admin can connect to closed room", roomUuid);
+      client.disconnect();
+      return;
+    }
     client.set(USER_STATE_KEY, new UserStateDto(userName, true, user.isAdmin(), user.getColor()));
     client.joinRoom(roomUuidString);
 
@@ -146,11 +161,7 @@ public class RoomSocketHandler {
     String roomUuid = client.getHandshakeData().getSingleUrlParam(ROOM_UUID.getLabel());
     UserStateDto userState = client.get(USER_STATE_KEY);
     if (userState == null) {
-      String userName = client.getHandshakeData().getSingleUrlParam(USER.getLabel());
-      User user = roomService.getUser(UUID.fromString(roomUuid), userName);
-      userState = new UserStateDto();
-      userState.setUsername(userName);
-      userState.setAdmin(user.isAdmin());
+      userState = setUserState(roomUuid, client);
     }
     userState.setActive(data.isActive());
     client.set(USER_STATE_KEY, userState);
@@ -158,10 +169,7 @@ public class RoomSocketHandler {
         data.isActive() ? "active" : "inactive"
     );
     SocketIONamespace namespace = client.getNamespace();
-    namespace.getRoomOperations(roomUuid).getClients()
-        .stream()
-        .filter(roomClient -> !roomClient.equals(client))
-        .forEach(roomClient -> roomClient.sendEvent(USER_ACTIVITY.name(), data));
+    namespace.getRoomOperations(roomUuid).sendEvent(USER_ACTIVITY.name(), data);
   }
 
   private void languageChangeEventHandler(SocketIOClient client, LanguageChangeDto data, AckRequest ackSender) {
@@ -185,6 +193,50 @@ public class RoomSocketHandler {
         .forEach(roomClient -> roomClient.sendEvent(TEXT_UPDATE.name(), data));
   }
 
+  private void closeRoomEventHandler(SocketIOClient client, ClosingRoomDto data, AckRequest acSender) {
+    String roomUuid = client.getHandshakeData().getSingleUrlParam(ROOM_UUID.getLabel());
+    UserStateDto userState = client.get(USER_STATE_KEY);
+    if (userState == null) {
+      userState = setUserState(roomUuid, client);
+      client.set(USER_STATE_KEY, userState);
+    }
+    if (!userState.isAdmin()) {
+      LOGGER.info("User={} is not an admin. Only admin can close the room", data.getUsername());
+      return;
+    }
+    roomService.changeRoomState(UUID.fromString(roomUuid), true);
+    LOGGER.info("Room with UUID={} closed by user={}", roomUuid, data.getUsername());
+    SocketIONamespace namespace = client.getNamespace();
+    namespace.getRoomOperations(roomUuid).sendEvent(CLOSE_ROOM.name(), data);
+    disconnectNonAdmins(namespace);
+  }
+
+  private void disconnectNonAdmins(SocketIONamespace namespace) {
+    namespace.getAllClients().stream()
+        .filter(roomClient -> {
+          UserStateDto userState = roomClient.get(USER_STATE_KEY);
+          return (userState == null || !userState.isAdmin());
+        })
+        .forEach(ClientOperations::disconnect);
+  }
+
+  private void openRoomEventHandler(SocketIOClient client, OpeningRoomDto data, AckRequest ackSender) {
+    String roomUuid = client.getHandshakeData().getSingleUrlParam(ROOM_UUID.getLabel());
+    UserStateDto userState = client.get(USER_STATE_KEY);
+    if (userState == null) {
+      userState = setUserState(roomUuid, client);
+      client.set(USER_STATE_KEY, userState);
+    }
+    if (!userState.isAdmin()) {
+      LOGGER.info("User={} is not an admin. Only admin can open the room", data.getUsername());
+      return;
+    }
+    roomService.changeRoomState(UUID.fromString(roomUuid), false);
+    LOGGER.info("Room with UUID={} opened by user={}", roomUuid, data.getUsername());
+    SocketIONamespace namespace = client.getNamespace();
+    namespace.getRoomOperations(roomUuid).sendEvent(OPEN_ROOM.name(), data);
+  }
+
   public void broadcastNewCommentToAdmins(UUID uuidOfRoom) {
     SocketIONamespace namespace = socketIOServer.getNamespace(WebSocketConfig.ROOM_URI_TEMPLATE);
     if (namespace == null) {
@@ -200,5 +252,15 @@ public class RoomSocketHandler {
           return (userState != null && userState.isAdmin());
         })
         .forEach(client -> client.sendEvent(NEW_COMMENT.name()));
+  }
+
+  private UserStateDto setUserState(String roomUuid, SocketIOClient client) {
+    String userName = client.getHandshakeData().getSingleUrlParam(USER.getLabel());
+    User user = roomService.getUser(UUID.fromString(roomUuid), userName);
+    UserStateDto userState = new UserStateDto();
+    userState.setUsername(userName);
+    userState.setAdmin(user.isAdmin());
+    userState.setActive(true);
+    return userState;
   }
 }

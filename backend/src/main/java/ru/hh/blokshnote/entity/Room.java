@@ -36,9 +36,8 @@ public class Room {
   @Column(name = "editor_language")
   private String editorLanguage;
 
-
-  public Room() {
-  }
+  @Column(name = "is_closed")
+  private boolean isClosed;
 
   public Long getId() {
     return id;
@@ -90,5 +89,13 @@ public class Room {
 
   public void setEditorLanguage(String editorLanguage) {
     this.editorLanguage = editorLanguage;
+  }
+
+  public boolean isClosed() {
+    return isClosed;
+  }
+
+  public void setClosed(boolean closed) {
+    isClosed = closed;
   }
 }

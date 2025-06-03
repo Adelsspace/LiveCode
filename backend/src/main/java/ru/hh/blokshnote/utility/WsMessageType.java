@@ -9,4 +9,6 @@ public enum WsMessageType {
   TEXT_UPDATE,
   USERS_UPDATE,
   NEW_COMMENT,
+  CLOSE_ROOM,
+  OPEN_ROOM,
 }
