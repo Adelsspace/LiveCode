@@ -72,6 +72,7 @@ export interface CommentDto {
   author: string | null;
   createdAt: string;
   isLlm: boolean;
+  color: string;
 }
 
 export interface CommentListResponse {
