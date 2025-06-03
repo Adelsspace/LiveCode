@@ -11,4 +11,6 @@ public enum WsMessageType {
   NEW_COMMENT,
   CLOSE_ROOM,
   OPEN_ROOM,
+  NEW_EDITOR_STATE_SEND_ALL,
+  TEXT_UPDATE_SEND_ALL,
 }
