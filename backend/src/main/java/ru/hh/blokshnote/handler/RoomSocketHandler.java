@@ -7,6 +7,7 @@ import com.corundumstudio.socketio.SocketIONamespace;
 import com.corundumstudio.socketio.SocketIOServer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 import ru.hh.blokshnote.config.WebSocketConfig;
@@ -46,6 +47,9 @@ import static ru.hh.blokshnote.utility.WsPathParam.USER;
 @Component
 public class RoomSocketHandler {
 
+  @Value("${socketio.broadcast.debug:false}")
+  private boolean isBroadcastEnable;
+
   private static final Logger LOGGER = LoggerFactory.getLogger(RoomSocketHandler.class);
   private final String USER_STATE_KEY = "USER_STATE";
   private final RoomService roomService;
@@ -68,8 +72,10 @@ public class RoomSocketHandler {
     namespace.addEventListener(TEXT_UPDATE.name(), TextUpdateDto.class, this::textUpdateEventHandler);
     namespace.addEventListener(CLOSE_ROOM.name(), ClosingRoomDto.class, this::closeRoomEventHandler);
     namespace.addEventListener(OPEN_ROOM.name(), OpeningRoomDto.class, this::openRoomEventHandler);
-    namespace.addEventListener(NEW_EDITOR_STATE_SEND_ALL.name(), EditorStateDto.class, this::editorStateSendAllEventHandler);
-    namespace.addEventListener(TEXT_UPDATE_SEND_ALL.name(), TextUpdateDto.class, this::textUpdateSendAllEventHandler);
+    if (isBroadcastEnable) {
+      namespace.addEventListener(NEW_EDITOR_STATE_SEND_ALL.name(), EditorStateDto.class, this::editorStateSendAllEventHandler);
+      namespace.addEventListener(TEXT_UPDATE_SEND_ALL.name(), TextUpdateDto.class, this::textUpdateSendAllEventHandler);
+    }
   }
 
   private void connectHandler(SocketIOClient client) {

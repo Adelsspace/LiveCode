@@ -33,6 +33,7 @@ services:
       SPRING_DATASOURCE_PASSWORD: dev-password
       SOCKETIO_PROTOCOL: ws
       LLM_KEY: ${LLM_KEY:-no-key}
+      SOCKETIO_BROADCAST_DEBUG: true
     depends_on:
       postgres:
         condition: service_healthy
