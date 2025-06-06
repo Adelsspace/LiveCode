@@ -7,6 +7,7 @@ import com.corundumstudio.socketio.SocketIONamespace;
 import com.corundumstudio.socketio.SocketIOServer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 import ru.hh.blokshnote.config.WebSocketConfig;
@@ -33,9 +34,11 @@ import static ru.hh.blokshnote.utility.WsMessageType.CURSOR_POSITION;
 import static ru.hh.blokshnote.utility.WsMessageType.LANGUAGE_CHANGE;
 import static ru.hh.blokshnote.utility.WsMessageType.NEW_COMMENT;
 import static ru.hh.blokshnote.utility.WsMessageType.NEW_EDITOR_STATE;
+import static ru.hh.blokshnote.utility.WsMessageType.NEW_EDITOR_STATE_SEND_ALL;
 import static ru.hh.blokshnote.utility.WsMessageType.OPEN_ROOM;
 import static ru.hh.blokshnote.utility.WsMessageType.TEXT_SELECTION;
 import static ru.hh.blokshnote.utility.WsMessageType.TEXT_UPDATE;
+import static ru.hh.blokshnote.utility.WsMessageType.TEXT_UPDATE_SEND_ALL;
 import static ru.hh.blokshnote.utility.WsMessageType.USERS_UPDATE;
 import static ru.hh.blokshnote.utility.WsMessageType.USER_ACTIVITY;
 import static ru.hh.blokshnote.utility.WsPathParam.ROOM_UUID;
@@ -43,6 +46,9 @@ import static ru.hh.blokshnote.utility.WsPathParam.USER;
 
 @Component
 public class RoomSocketHandler {
+
+  @Value("${socketio.broadcast.debug:false}")
+  private boolean isBroadcastEnable;
 
   private static final Logger LOGGER = LoggerFactory.getLogger(RoomSocketHandler.class);
   private final String USER_STATE_KEY = "USER_STATE";
@@ -66,6 +72,10 @@ public class RoomSocketHandler {
     namespace.addEventListener(TEXT_UPDATE.name(), TextUpdateDto.class, this::textUpdateEventHandler);
     namespace.addEventListener(CLOSE_ROOM.name(), ClosingRoomDto.class, this::closeRoomEventHandler);
     namespace.addEventListener(OPEN_ROOM.name(), OpeningRoomDto.class, this::openRoomEventHandler);
+    if (isBroadcastEnable) {
+      namespace.addEventListener(NEW_EDITOR_STATE_SEND_ALL.name(), EditorStateDto.class, this::editorStateSendAllEventHandler);
+      namespace.addEventListener(TEXT_UPDATE_SEND_ALL.name(), TextUpdateDto.class, this::textUpdateSendAllEventHandler);
+    }
   }
 
   private void connectHandler(SocketIOClient client) {
@@ -262,5 +272,24 @@ public class RoomSocketHandler {
     userState.setAdmin(user.isAdmin());
     userState.setActive(true);
     return userState;
+  }
+
+  private void editorStateSendAllEventHandler(SocketIOClient client, EditorStateDto data, AckRequest ackSender) {
+    String roomUuid = client.getHandshakeData().getSingleUrlParam(ROOM_UUID.getLabel());
+    LOGGER.info("Updating editor text={} and language={} in room with UUID={}",
+        data.getText(), data.getLanguage(), roomUuid
+    );
+    Room room = roomService.updateRoomEditor(UUID.fromString(roomUuid), data);
+    EditorStateDto dto = new EditorStateDto();
+    dto.setText(room.getEditorText());
+    dto.setLanguage(room.getEditorLanguage());
+    client.getNamespace().getRoomOperations(roomUuid).sendEvent(NEW_EDITOR_STATE.name(), dto);
+  }
+
+  private void textUpdateSendAllEventHandler(SocketIOClient client, TextUpdateDto data, AckRequest ackSender) {
+    String roomUuid = client.getHandshakeData().getSingleUrlParam(ROOM_UUID.getLabel());
+    LOGGER.info("In room with UUID={} user={} updated text", roomUuid, data.getUsername());
+    SocketIONamespace namespace = client.getNamespace();
+    namespace.getRoomOperations(roomUuid).sendEvent(TEXT_UPDATE_SEND_ALL.name(), data);
   }
 }
