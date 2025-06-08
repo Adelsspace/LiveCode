@@ -27,7 +27,7 @@ export const UsersList = () => {
               <span>{username}</span>
               <span
                 className={styles.statusIndicator}
-                style={{ backgroundColor: isActive ? "green" : "gray" }}
+                style={{ backgroundColor: isActive ? "darkgreen" : "darkred" }}
               />
             </li>
           ))}

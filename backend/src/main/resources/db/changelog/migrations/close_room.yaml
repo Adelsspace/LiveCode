@@ -1,0 +1,13 @@
+databaseChangeLog:
+- logicalFilePath: db/changelog/migrations/close_room.yaml
+- changeSet:
+    id: 1748700535639-1
+    author: aleksey (generated)
+    changes:
+    - addColumn:
+        columns:
+        - column:
+            name: is_closed
+            type: boolean
+        tableName: rooms
+

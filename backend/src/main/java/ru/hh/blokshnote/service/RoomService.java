@@ -16,12 +16,15 @@ import ru.hh.blokshnote.entity.Room;
 import ru.hh.blokshnote.entity.User;
 import ru.hh.blokshnote.repository.RoomRepository;
 import ru.hh.blokshnote.repository.UserRepository;
+import ru.hh.blokshnote.utility.colors.UserColorUtil;
 import ru.hh.blokshnote.utility.security.RoomSecurityUtils;
 
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 public class RoomService {
@@ -64,12 +67,14 @@ public class RoomService {
     room.setExpiredAt(now.plus(ROOM_TIME_TO_LIVE));
     room.setEditorText(INITIAL_EDITOR_TEXT);
     room.setEditorLanguage(INITIAL_EDITOR_LANGUAGE);
+    room.setClosed(false);
     room = roomRepository.save(room);
 
     User adminUser = new User();
     adminUser.setName(request.getUsername());
     adminUser.setAdmin(true);
     adminUser.setRoom(room);
+    adminUser.setColor(UserColorUtil.generateUserColor(request.getUsername(), Set.of()));
     userRepository.save(adminUser);
 
     return room;
@@ -79,16 +84,22 @@ public class RoomService {
   @Transactional
   public User addUserToRoom(UUID roomUuid, CreateUserRequest request) {
     Room room = getRoomByUuid(roomUuid);
-
+    if (room.isClosed()) {
+      LOGGER.info("Room with uuid={} is closed", roomUuid);
+      throw new ResponseStatusException(HttpStatus.CONFLICT, "Room with uuid=%s is closed".formatted(roomUuid));
+    }
     userRepository.findByNameAndRoom(request.getUsername(), room)
         .ifPresent(user -> {
           throw new ResponseStatusException(HttpStatus.CONFLICT, "User with this name already exists in the room");
         });
 
+    String color = getColorForNewUser(request.getUsername(), room);
+
     User user = new User();
     user.setName(request.getUsername());
     user.setAdmin(false);
     user.setRoom(room);
+    user.setColor(color);
     return userRepository.save(user);
   }
 
@@ -101,10 +112,14 @@ public class RoomService {
         .ifPresent(user -> {
           throw new ResponseStatusException(HttpStatus.CONFLICT, "User with this name already exists in the room");
         });
+
+    String color = getColorForNewUser(request.getUsername(), room);
+
     User user = new User();
     user.setName(request.getUsername());
     user.setAdmin(true);
     user.setRoom(room);
+    user.setColor(color);
     return userRepository.save(user);
   }
 
@@ -156,8 +171,39 @@ public class RoomService {
     return userRepository.findByNameAndRoomRoomUuid(userName, roomUuid)
         .orElseThrow(() -> {
           LOGGER.info("User with name={} in Room with UUID={} not found", userName, roomUuid);
-          return new ResponseStatusException(HttpStatus.NOT_FOUND,
-              "User with name=%s in Room with UUID=%s not found".formatted(userName, roomUuid));
+          return new ResponseStatusException(
+              HttpStatus.NOT_FOUND,
+              "User with name=%s in Room with UUID=%s not found".formatted(userName, roomUuid)
+          );
         });
+  }
+
+  @Transactional(readOnly = true)
+  public String getColorForNewUser(String username, Room room) {
+    Set<String> userColors = userRepository.findAllByRoom(room).stream()
+        .map(User::getColor)
+        .collect(Collectors.toSet());
+    return UserColorUtil.generateUserColor(username, userColors);
+  }
+
+  @Transactional
+  public void changeRoomState(UUID roomUuid, boolean isClosed) {
+    Room room = roomRepository.findByRoomUuid(roomUuid)
+        .orElseThrow(() -> {
+          LOGGER.info("Room with UUID={} not found", roomUuid);
+          return new ResponseStatusException(HttpStatus.NOT_FOUND, String.format("Room with UUID=%s not found", roomUuid));
+        });
+    room.setClosed(isClosed);
+    roomRepository.save(room);
+  }
+
+  @Transactional(readOnly = true)
+  public boolean isRoomClosed(UUID roomUuid) {
+    Room room = roomRepository.findByRoomUuid(roomUuid)
+        .orElseThrow(() -> {
+          LOGGER.info("Room with UUID={} not found", roomUuid);
+          return new ResponseStatusException(HttpStatus.NOT_FOUND, String.format("Room with UUID=%s not found", roomUuid));
+        });
+    return room.isClosed();
   }
 }

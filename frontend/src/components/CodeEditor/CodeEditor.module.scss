@@ -2,3 +2,49 @@
   display: flex;
   gap: 10px;
 }
+
+.container {
+  display: grid;
+  grid-template-columns: 67% 5px 33%;
+  height: 79vh;
+  margin-top: 10px;
+}
+
+.editor {
+  overflow: auto;
+  min-width: 10%;
+}
+
+.chat {
+  overflow: auto;
+  min-width: 10%;
+}
+
+.separator {
+  cursor: ew-resize;
+  background-color: rgba($color: #b0afaf, $alpha: 0.5);
+  height: 98%;
+
+  transition: background-color 0.3s;
+  border-radius: 50%;
+}
+
+.separator:hover {
+  background-color: rgba($color: #b0afaf, $alpha: 1);
+}
+
+.dots {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+}
+
+.dot {
+  width: 3px;
+  height: 3px;
+  background-color: black;
+  border-radius: 50%;
+  margin: 2px 0;
+}

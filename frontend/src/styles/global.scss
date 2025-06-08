@@ -44,12 +44,12 @@ body {
   align-items: center;
   width: 100%;
 }
-
 html[data-theme="light"] {
   --primary: #{$primary-light};
   --secondary: #{$secondary-light};
   --accent: #{$accent-light};
   --hover: #{$hover-light};
+  --hover-text: #{$hover-text};
   --text: #{$text-light};
   --text-secondary: #{$text-secondary-light};
   --border: #{$border-light};
@@ -64,6 +64,7 @@ html[data-theme="dark"] {
   --secondary: #{$secondary-dark};
   --accent: #{$accent-dark};
   --hover: #{$hover-dark};
+  --hover-text: #{$hover-text};
   --text: #{$text-dark};
   --text-secondary: #{$text-secondary-dark};
   --border: #{$border-dark};

@@ -10,7 +10,7 @@ import {
 } from "../../types/shared.types";
 
 interface RoomState {
-  id: string | null;
+  roomId: string | null;
   name: string;
   adminToken: string | null;
   users: User[];
@@ -23,30 +23,60 @@ interface RoomState {
   userActivity: UserActivity | null;
   languageChange: LanguageChange | null;
   textUpdate: TextUpdate | null;
+  commentsUpdated: boolean;
 }
 
-const initialState: RoomState = {
-  id: null,
-  name: "",
-  adminToken: null,
-  users: [],
-  content: "",
-  status: "idle",
-  version: 0,
-  editorState: { text: "", language: "javascript" },
-  textSelection: null,
-  cursorPosition: null,
-  userActivity: null,
-  languageChange: null,
-  textUpdate: null,
+const getInitialState = (): RoomState => {
+  const participantData = sessionStorage.getItem("participant");
+  if (participantData) {
+    try {
+      const { roomId, username, adminToken } = JSON.parse(participantData);
+      return {
+        roomId: roomId || null,
+        name: username || "",
+        adminToken: adminToken || null,
+        users: [],
+        content: "",
+        status: "idle",
+        version: 0,
+        editorState: { text: "", language: "javascript" },
+        textSelection: null,
+        cursorPosition: null,
+        userActivity: null,
+        languageChange: null,
+        textUpdate: null,
+        commentsUpdated: false,
+      };
+    } catch (error) {
+      console.error("Ошибка при парсинге participantData:", error);
+    }
+  }
+  return {
+    roomId: null,
+    name: "",
+    adminToken: null,
+    users: [],
+    content: "",
+    status: "idle",
+    version: 0,
+    editorState: { text: "", language: "javascript" },
+    textSelection: null,
+    cursorPosition: null,
+    userActivity: null,
+    languageChange: null,
+    textUpdate: null,
+    commentsUpdated: false,
+  };
 };
+
+const initialState: RoomState = getInitialState();
 
 const roomSlice = createSlice({
   name: "room",
   initialState,
   reducers: {
     setRoomId: (state, action: PayloadAction<string>) => {
-      state.id = action.payload;
+      state.roomId = action.payload;
     },
     setName: (state, action: PayloadAction<string>) => {
       state.name = action.payload;
@@ -94,6 +124,9 @@ const roomSlice = createSlice({
         user.isActive = isActive;
       }
     },
+    setCommentsUpdated(state, action: PayloadAction<boolean>) {
+      state.commentsUpdated = action.payload;
+    },
   },
 });
 
@@ -112,6 +145,7 @@ export const {
   setTextUpdate,
   setUserActivityByUsername,
   setVersionChange,
+  setCommentsUpdated,
 } = roomSlice.actions;
 
 export default roomSlice.reducer;

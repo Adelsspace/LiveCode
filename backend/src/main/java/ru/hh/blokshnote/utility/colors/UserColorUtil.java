@@ -1,31 +1,31 @@
 package ru.hh.blokshnote.utility.colors;
 
+import java.util.Set;
+
 public class UserColorUtil {
   private static final String[] COLOR_POOL = {
-      "#e6194b", // Red
-      "#3cb44b", // Green
-      "#ffe119", // Yellow
-      "#4363d8", // Blue
-      "#f58231", // Orange
-      "#911eb4", // Purple
-      "#46f0f0", // Cyan
-      "#f032e6", // Magenta
-      "#bcf60c", // Lime
-      "#fabebe", // Pink
-      "#008080", // Teal
-      "#e6beff", // Lavender
-      "#fffac8", // Beige
-      "#800000", // Maroon
-      "#aaffc3", // Mint
-      "#808000", // Olive
-      "#ffd8b1", // Apricot
-      "#000075", // Navy
-      "#00aaff", // Sky Blue
-      "#ff66b2"  // Bright Pink
+      "#0bd5c2",
+      "#c277f9",
+      "#09ae9f",
+      "#ff7a92",
+      "#ffa520",
+      "#FF6348",
+      "#e74024",
+      "#00a329"
   };
 
-  public static String generateUserColor(String username) {
+  public static String generateUserColor(String username, Set<String> usedColors) {
     int hashCode = Math.abs(username.hashCode());
-    return COLOR_POOL[hashCode % COLOR_POOL.length];
+    int initialIdx = hashCode % COLOR_POOL.length;
+
+    for (int i = 0; i < COLOR_POOL.length; i++) {
+      int idx = (initialIdx + i) % COLOR_POOL.length;
+      String color = COLOR_POOL[idx];
+      if (!usedColors.contains(color)) {
+        return color;
+      }
+    }
+
+    return COLOR_POOL[initialIdx];
   }
 }

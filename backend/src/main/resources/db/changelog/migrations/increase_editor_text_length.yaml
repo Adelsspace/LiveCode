@@ -1,0 +1,10 @@
+databaseChangeLog:
+- logicalFilePath: db/changelog/migrations/increase_editor_text_length.yaml
+- changeSet:
+    id: increase-text-length
+    author: misha
+    changes:
+      - modifyDataType:
+          tableName: rooms
+          columnName: editor_text
+          newDataType: TEXT

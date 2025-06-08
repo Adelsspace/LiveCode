@@ -15,7 +15,8 @@
   }
 
   .adminStar {
-    color: red;
+    color: white;
+    font-weight: bolder;
     margin-right: 5px;
   }
 
@@ -24,5 +25,6 @@
     height: 10px;
     border-radius: 50%;
     margin-left: 10px;
+    border: 1px solid black;
   }
 }

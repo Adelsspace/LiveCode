@@ -1,0 +1,50 @@
+.comment {
+  max-width: 600px;
+  padding: 1rem;
+  margin: 0.5rem 0;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  color: black;
+  position: relative;
+  background-color: #fff0e1;
+}
+
+.author {
+  display: block;
+  font-weight: 600;
+  text-align: left;
+}
+
+.content {
+  white-space: pre-wrap;
+  line-height: 1.5;
+  text-align: left;
+  overflow-wrap: break-word;
+}
+
+.toggleButton {
+  background: none;
+  border: none;
+  color: var(--accent);
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.date {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  color: #666;
+  font-size: 0.8rem;
+}
+
+.llmBadge {
+  font-size: 0.8rem;
+  color: #08a15f;
+  font-style: italic;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+}

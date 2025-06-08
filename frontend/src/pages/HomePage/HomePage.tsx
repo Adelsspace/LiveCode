@@ -2,7 +2,7 @@ import { useNavigate } from "react-router-dom";
 import { useCreateRoomMutation } from "../../store/api/roomApi";
 import styles from "./HomePage.module.scss";
 import ThemeToggle from "../../components/ThemeToggle/ThemeToggle";
-import { Logo } from "../../components";
+import { Button, Logo } from "../../components";
 
 const HomePage = () => {
   const navigate = useNavigate();
@@ -33,9 +33,7 @@ const HomePage = () => {
         <h1 className={styles.title}>
           Проводи технические интервью на новом уровне
         </h1>
-        <button className={styles.button} onClick={handleCreateRoom}>
-          Создать комнату
-        </button>
+        <Button label={"Создать комнату"} onClick={handleCreateRoom} />
       </section>
     </>
   );

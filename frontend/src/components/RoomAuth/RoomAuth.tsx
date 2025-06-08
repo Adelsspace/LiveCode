@@ -5,7 +5,11 @@ import {
 } from "../../store/api/roomApi";
 import { RoomAuthModal } from "../../components";
 import { useAppDispatch } from "../../hooks/reduxHooks";
-import { setName } from "../../store/slices/roomSlice";
+import {
+  setAdminToken,
+  setName,
+  setRoomId,
+} from "../../store/slices/roomSlice";
 import { useSearchParams } from "react-router-dom";
 
 interface RoomAuthProps {
@@ -92,6 +96,9 @@ export const RoomAuth: React.FC<RoomAuthProps> = ({
 
       sessionStorage.setItem("participant", JSON.stringify(participant));
       dispatch(setName(usernameInput));
+      dispatch(setName(participant.username));
+      dispatch(setRoomId(roomId));
+      if (adminToken) dispatch(setAdminToken(adminToken));
       onAuthSuccess(usernameInput, result.isAdmin);
     } catch (error) {
       console.error("Аутентификация не удалась:", error);

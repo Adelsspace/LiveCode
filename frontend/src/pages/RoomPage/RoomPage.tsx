@@ -61,7 +61,7 @@ const RoomPage = () => {
     return () => {
       window.removeEventListener("beforeunload", handleBeforeUnload);
     };
-  }, [roomData, roomError, roomId, navigate, handleBeforeUnload]);
+  }, [roomData, roomError, roomId, navigate, handleBeforeUnload, dispatch]);
 
   useEffect(() => {
     if (!username) return;
