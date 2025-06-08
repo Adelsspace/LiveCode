@@ -42,10 +42,12 @@ public class RoomService {
 
   private final RoomRepository roomRepository;
   private final UserRepository userRepository;
+  private final DiffService diffService;
 
-  public RoomService(RoomRepository roomRepository, UserRepository userRepository) {
+  public RoomService(RoomRepository roomRepository, UserRepository userRepository, DiffService diffService) {
     this.roomRepository = roomRepository;
     this.userRepository = userRepository;
+    this.diffService = diffService;
   }
 
   @Transactional
@@ -147,6 +149,7 @@ public class RoomService {
           LOGGER.info("Room with UUID={} not found", roomUuid);
           return new ResponseStatusException(HttpStatus.NOT_FOUND, String.format("Room with UUID=%s not found", roomUuid));
         });
+    diffService.makeDiff(room, messageDto.getText());
     room.setEditorText(messageDto.getText());
     room.setEditorLanguage(messageDto.getLanguage());
     return roomRepository.save(room);

@@ -24,3 +24,6 @@ databaseChangeLog:
   - include:
       file: migrations/close_room.yaml
       relativeToChangelogFile: true
+  - include:
+      file: migrations/created_diff_history_table.yaml
+      relativeToChangelogFile: true

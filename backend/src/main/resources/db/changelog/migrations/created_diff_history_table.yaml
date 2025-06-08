@@ -1,0 +1,46 @@
+databaseChangeLog:
+- logicalFilePath: db/changelog/migrations/created_diff_history_table.yaml
+- changeSet:
+    id: 1748176090895-1
+    author: misha (generated)
+    changes:
+    - createTable:
+        columns:
+        - column:
+            autoIncrement: true
+            constraints:
+              nullable: false
+              primaryKey: true
+              primaryKeyName: diffsPK
+            name: id
+            type: BIGINT
+        - column:
+            constraints:
+              nullable: false
+            name: content
+            type: TEXT
+        - column:
+            constraints:
+              nullable: false
+            name: created_at
+            type: TIMESTAMP(6) WITHOUT TIME ZONE
+        - column:
+            constraints:
+              nullable: false
+            name: room_id
+            type: BIGINT
+        tableName: diffs
+- changeSet:
+    id: 1748176090895-2
+    author: misha (generated)
+    changes:
+    - addForeignKeyConstraint:
+        baseColumnNames: room_id
+        baseTableName: diffs
+        constraintName: FKok37gju94w5uuit49bbymg6va
+        deferrable: false
+        initiallyDeferred: false
+        referencedColumnNames: id
+        referencedTableName: rooms
+        validate: true
+
