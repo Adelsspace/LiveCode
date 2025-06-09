@@ -93,6 +93,12 @@ const RoomPage = () => {
     setUsername(usernameInput);
     setIsAdmin(isAdmin);
     setShowPopup(false);
+
+    const { pathname } = window.location;
+    const searchParams = new URLSearchParams(window.location.search);
+    searchParams.delete("adminToken");
+
+    navigate(`${pathname}?${searchParams.toString()}`, { replace: true });
   };
 
   if (!roomData && !roomError) {

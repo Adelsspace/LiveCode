@@ -1,0 +1,18 @@
+.copyButton {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 5px 0;
+}
+
+.copyIconContainer {
+  cursor: pointer;
+}
+
+.icon {
+  color: var(--text);
+
+  &:hover {
+    color: var(--hover);
+  }
+}

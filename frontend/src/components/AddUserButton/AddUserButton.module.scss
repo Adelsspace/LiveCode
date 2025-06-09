@@ -1,0 +1,31 @@
+.dropdown {
+  position: absolute;
+  background: var(--primary);
+  color: var(--text);
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  z-index: 2;
+}
+
+.linkContainer {
+  margin: 10px 0;
+}
+
+.icon {
+  color: var(--text);
+  cursor: pointer;
+
+  &:hover {
+    color: var(--hover);
+  }
+}
+
+.addButton {
+  padding-top: 0.6em;
+  &.active {
+    .icon {
+      color: var(--hover);
+    }
+  }
+}
