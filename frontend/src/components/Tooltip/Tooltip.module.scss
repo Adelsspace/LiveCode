@@ -1,0 +1,21 @@
+.tooltip {
+  position: fixed;
+  background: var(--hover);
+  color: var(--hover-text);
+  padding: 5px 10px;
+  border-radius: 5px;
+  font-size: 13px;
+  white-space: nowrap;
+  pointer-events: none;
+
+  &::after {
+    content: "";
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border-width: 5px;
+    border-style: solid;
+    border-color: var(--hover) transparent transparent transparent;
+  }
+}
