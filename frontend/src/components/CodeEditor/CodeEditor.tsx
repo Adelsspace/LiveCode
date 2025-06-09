@@ -47,10 +47,10 @@ export const CodeEditor = ({ isAdmin }: CodeEditorProps) => {
           containerWidth) *
         100;
 
-      if (newWidth < 26) {
-        setEditorWidth(26);
-      } else if (newWidth > 72) {
-        setEditorWidth(72);
+      if (newWidth < 29) {
+        setEditorWidth(29);
+      } else if (newWidth > 71) {
+        setEditorWidth(71);
       } else {
         setEditorWidth(newWidth);
       }
