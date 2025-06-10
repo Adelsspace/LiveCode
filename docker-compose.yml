@@ -34,6 +34,8 @@ services:
       SOCKETIO_PROTOCOL: ws
       LLM_KEY: ${LLM_KEY:-no-key}
       SOCKETIO_BROADCAST_DEBUG: true
+      SPRING_KAFKA_BOOTSTRAP-SERVERS: kafka:29092
+      KAFKA_GROUP_ID: "instance-1"
     depends_on:
       postgres:
         condition: service_healthy
@@ -106,6 +108,23 @@ services:
       KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:29092
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    networks:
+      - internal
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: kafka-ui
+    ports:
+      - "9090:9090"
+    depends_on:
+      - kafka
+      - zookeeper
+    environment:
+      - SERVER_PORT=9090
+      - KAFKA_CLUSTERS_0_NAME=local
+      - KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=kafka:29092
+      - KAFKA_CLUSTERS_0_ZOOKEEPER=zookeeper:2181
+    restart: always
     networks:
       - internal
 
