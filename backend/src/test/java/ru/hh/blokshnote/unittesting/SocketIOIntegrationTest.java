@@ -9,7 +9,6 @@ import org.json.JSONObject;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import ru.hh.blokshnote.entity.Room;
 import ru.hh.blokshnote.entity.User;
@@ -34,8 +33,7 @@ import static ru.hh.blokshnote.utility.WsMessageType.TEXT_UPDATE;
 import static ru.hh.blokshnote.utility.WsMessageType.USERS_UPDATE;
 import static ru.hh.blokshnote.utility.WsMessageType.USER_ACTIVITY;
 
-@SpringBootTest
-public class SocketIOIntegrationTest extends AbstractIntegrationTest {
+public class SocketIOIntegrationTest extends NoKafkaAbstractIntegrationTest {
 
   @MockitoBean
   private RoomService roomService;
