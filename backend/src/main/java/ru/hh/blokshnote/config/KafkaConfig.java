@@ -1,19 +1,32 @@
 package ru.hh.blokshnote.config;
 
-import org.apache.kafka.clients.admin.NewTopic;
+import org.apache.kafka.clients.consumer.Consumer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.kafka.config.TopicBuilder;
+import org.springframework.kafka.core.ConsumerFactory;
 
 @Configuration
 public class KafkaConfig {
 
   @Bean
-  public NewTopic websocketMessagesTopic() {
+  public PartitionFinder finder(ConsumerFactory<String, String> consumerFactory) {
+    return new PartitionFinder(consumerFactory);
+  }
 
-    return TopicBuilder.name("websocket-messages")
-        .partitions(2)
-        .replicas(1)
-        .build();
+  public static class PartitionFinder {
+
+    private final ConsumerFactory<String, String> consumerFactory;
+
+    public PartitionFinder(ConsumerFactory<String, String> consumerFactory) {
+      this.consumerFactory = consumerFactory;
+    }
+
+    public String[] partitions(String topic) {
+      try (Consumer<String, String> consumer = consumerFactory.createConsumer()) {
+        return consumer.partitionsFor(topic).stream()
+            .map(pi -> "" + pi.partition())
+            .toArray(String[]::new);
+      }
+    }
   }
 }
