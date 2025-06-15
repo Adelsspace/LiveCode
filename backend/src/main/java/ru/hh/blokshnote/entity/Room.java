@@ -30,6 +30,9 @@ public class Room {
   @Column(name = "expired_at")
   private Instant expiredAt;
 
+  @Column(name = "updated_at")
+  private Instant updatedAt;
+
   @Column(name = "editor_text", nullable = false)
   private String editorText;
 
@@ -73,6 +76,14 @@ public class Room {
 
   public void setExpiredAt(Instant expiredAt) {
     this.expiredAt = expiredAt;
+  }
+
+  public Instant getUpdatedAt() {
+    return updatedAt;
+  }
+
+  public void setUpdatedAt(Instant updatedAt) {
+    this.updatedAt = updatedAt;
   }
 
   public String getEditorText() {
