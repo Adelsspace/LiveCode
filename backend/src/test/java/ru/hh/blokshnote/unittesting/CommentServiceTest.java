@@ -10,9 +10,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpStatus;
-import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 import ru.hh.blokshnote.dto.comment.request.CreateCommentDto;
@@ -25,10 +23,8 @@ import ru.hh.blokshnote.repository.CommentRepository;
 import ru.hh.blokshnote.service.CommentService;
 import ru.hh.blokshnote.service.RoomService;
 
-@SpringBootTest
 @Transactional
-@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
-public class CommentServiceTest extends AbstractIntegrationTest {
+public class CommentServiceTest extends NoKafkaAbstractIntegrationTest {
   @Autowired
   RoomService roomService;
 

@@ -34,11 +34,15 @@ services:
       SOCKETIO_PROTOCOL: ws
       LLM_KEY: ${LLM_KEY:-no-key}
       SOCKETIO_BROADCAST_DEBUG: true
+      SPRING_KAFKA_BOOTSTRAP-SERVERS: kafka:29092
+      KAFKA_GROUP_ID: "instance-1"
     depends_on:
       postgres:
         condition: service_healthy
       kafka:
-        condition: service_started
+        condition: service_healthy
+      init-kafka:
+        condition: service_completed_successfully
     networks:
       - internal
 
@@ -80,32 +84,66 @@ services:
     networks:
       - internal
 
-  zookeeper:
-    image: confluentinc/cp-zookeeper:7.6.0
-    container_name: zookeeper
-    restart: always
-    ports:
-      - "2181:2181"
-    environment:
-      ZOOKEEPER_CLIENT_PORT: 2181
-      ZOOKEEPER_TICK_TIME: 2000
-    networks:
-      - internal
-
   kafka:
     image: confluentinc/cp-kafka:7.6.0
     container_name: kafka
     restart: always
     ports:
       - "29092:29092"
-    depends_on:
-      - zookeeper
+    healthcheck:
+      test: [ "CMD", "nc", "-vz", "localhost", "29092" ]
+      interval: 10s
+      timeout: 3s
+      retries: 5
     environment:
-      KAFKA_BROKER_ID: 1
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:29092
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_NODE_ID: 1
+      KAFKA_CONTROLLER_QUORUM_VOTERS: "1@kafka:29093"
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:29092, CONTROLLER://0.0.0.0:29093
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092
+      CLUSTER_ID: "j9Nu3X14TjiPGiEVovU8jQ"
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: "CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT"
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    volumes:
+      - kafka-data:/var/lib/kafka/data
+    networks:
+      - internal
+
+  init-kafka:
+    image: confluentinc/cp-kafka:7.6.0
+    depends_on:
+      kafka:
+        condition: service_healthy
+    entrypoint: [ '/bin/sh', '-c' ]
+    restart: on-failure
+    command: |
+      "
+      # blocks until kafka is reachable
+      kafka-topics --bootstrap-server kafka:29092 --list
+      
+      echo -e 'Creating kafka topics'
+      kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic websocket-messages --replication-factor 1 --partitions 2
+      
+      echo -e 'Successfully created the following topics:'
+      kafka-topics --bootstrap-server kafka:29092 --list
+      "
+    networks:
+      - internal
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: kafka-ui
+    ports:
+      - "9090:9090"
+    depends_on:
+      - kafka
+    environment:
+      - SERVER_PORT=9090
+      - KAFKA_CLUSTERS_0_NAME=local
+      - KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=kafka:29092
+    restart: always
     networks:
       - internal
 
@@ -114,3 +152,4 @@ networks:
 
 volumes:
   pgdata:
+  kafka-data:

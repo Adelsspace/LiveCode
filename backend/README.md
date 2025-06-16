@@ -45,6 +45,12 @@ mvn clean test -Dtest=OpenApiGenerationTest
 docker-compose up -d --build
 ```
 
+## Kafka - UI
+
+### Only DEV
+
+Kafka-ui для мониторинга топиков, consumer и producer находится по адресу localhost:9090
+
 ## Взаимодействие с WebSocket
 
 Для получения ссылки выполнить GET запрос на "/api/rooms/{uuid}/url", где {uuid} - UUID комнаты.  
