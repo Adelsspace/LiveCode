@@ -27,16 +27,20 @@ export interface EditorState {
 }
 
 export interface TextSelection {
-  startLineNumber: number;
-  startColumn: number;
-  endLineNumber: number;
-  endColumn: number;
+  selection: {
+    startLineNumber: number;
+    startColumn: number;
+    endLineNumber: number;
+    endColumn: number;
+  };
   username: string;
 }
 
 export interface CursorPosition {
-  lineNumber: number;
-  column: number;
+  position: {
+    lineNumber: number;
+    column: number;
+  };
   username: string;
 }
 
@@ -59,7 +63,6 @@ export interface TextUpdate {
       endColumn: number;
     };
     text: string;
-    forceMoveMarkers: boolean;
     version: number;
   }[];
   username: string;

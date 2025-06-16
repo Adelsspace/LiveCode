@@ -18,8 +18,8 @@ interface RoomState {
   status: "idle" | "loading" | "connected" | "error";
   version: number;
   editorState: EditorState | null;
-  textSelection: TextSelection | null;
-  cursorPosition: CursorPosition | null;
+  textSelections: Record<string, TextSelection>;
+  cursorPositions: Record<string, CursorPosition>;
   userActivity: UserActivity | null;
   languageChange: LanguageChange | null;
   textUpdate: TextUpdate | null;
@@ -40,8 +40,8 @@ const getInitialState = (): RoomState => {
         status: "idle",
         version: 0,
         editorState: { text: "", language: "javascript" },
-        textSelection: null,
-        cursorPosition: null,
+        textSelections: {},
+        cursorPositions: {},
         userActivity: null,
         languageChange: null,
         textUpdate: null,
@@ -60,8 +60,8 @@ const getInitialState = (): RoomState => {
     status: "idle",
     version: 0,
     editorState: { text: "", language: "javascript" },
-    textSelection: null,
-    cursorPosition: null,
+    textSelections: {},
+    cursorPositions: {},
     userActivity: null,
     languageChange: null,
     textUpdate: null,
@@ -85,7 +85,22 @@ const roomSlice = createSlice({
       state.adminToken = action.payload;
     },
     setUsers: (state, action: PayloadAction<User[]>) => {
-      state.users = action.payload;
+      const newUsers = action.payload;
+      const currentUsernames = newUsers.map((u) => u.username);
+
+      Object.keys(state.textSelections).forEach((username) => {
+        if (!currentUsernames.includes(username)) {
+          delete state.textSelections[username];
+        }
+      });
+
+      Object.keys(state.cursorPositions).forEach((username) => {
+        if (!currentUsernames.includes(username)) {
+          delete state.cursorPositions[username];
+        }
+      });
+
+      state.users = newUsers;
     },
     setContent: (state, action: PayloadAction<string>) => {
       state.content = action.payload;
@@ -97,10 +112,23 @@ const roomSlice = createSlice({
       state.editorState = action.payload;
     },
     setTextSelection: (state, action: PayloadAction<TextSelection>) => {
-      state.textSelection = action.payload;
+      const { username, selection } = action.payload;
+      const isZeroSelection =
+        selection.startLineNumber === 0 && selection.endLineNumber === 0;
+
+      if (isZeroSelection) {
+        delete state.textSelections[username];
+      } else {
+        state.textSelections[username] = action.payload;
+      }
     },
     setCursorPosition: (state, action: PayloadAction<CursorPosition>) => {
-      state.cursorPosition = action.payload;
+      state.cursorPositions[action.payload.username] = action.payload;
+    },
+    clearUserDecorations: (state, action: PayloadAction<string>) => {
+      const username = action.payload;
+      delete state.textSelections[username];
+      delete state.cursorPositions[username];
     },
     setUserActivity: (state, action: PayloadAction<UserActivity>) => {
       state.userActivity = action.payload;
@@ -140,6 +168,7 @@ export const {
   setEditorState,
   setTextSelection,
   setCursorPosition,
+  clearUserDecorations,
   setUserActivity,
   setLanguageChange,
   setTextUpdate,

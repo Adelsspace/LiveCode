@@ -12,7 +12,11 @@ import {
 } from "../store/slices/roomSlice";
 import { roomApi } from "../store/api/roomApi";
 import type { ThunkDispatch, UnknownAction } from "@reduxjs/toolkit";
-import { CursorPosition, TextSelection } from "../types/shared.types";
+import {
+  CursorPosition,
+  TextSelection,
+  TextUpdate,
+} from "../types/shared.types";
 
 class SocketService {
   private socket: typeof Socket | null = null;
@@ -85,42 +89,12 @@ class SocketService {
     this.socket.on("NEW_COMMENT", () => {
       dispatch(setCommentsUpdated(true));
     });
-    this.socket.on(
-      "TEXT_SELECTION",
-      (data: {
-        selection: {
-          startLineNumber: number;
-          startColumn: number;
-          endLineNumber: number;
-          endColumn: number;
-        };
-        username: string;
-      }) => {
-        const textSelection: TextSelection = {
-          startLineNumber: data.selection.startLineNumber,
-          startColumn: data.selection.startColumn,
-          endLineNumber: data.selection.endLineNumber,
-          endColumn: data.selection.endColumn,
-          username: data.username,
-        };
-        dispatch(setTextSelection(textSelection));
-      }
-    );
-
-    this.socket.on(
-      "CURSOR_POSITION",
-      (data: {
-        position: { lineNumber: number; column: number };
-        username: string;
-      }) => {
-        const cursorPosition: CursorPosition = {
-          lineNumber: data.position.lineNumber,
-          column: data.position.column,
-          username: data.username,
-        };
-        dispatch(setCursorPosition(cursorPosition));
-      }
-    );
+    this.socket.on("TEXT_SELECTION", (payload: TextSelection) => {
+      dispatch(setTextSelection(payload));
+    });
+    this.socket.on("CURSOR_POSITION", (payload: CursorPosition) => {
+      dispatch(setCursorPosition(payload));
+    });
 
     this.socket.on(
       "USER_ACTIVITY",
@@ -136,25 +110,9 @@ class SocketService {
       }
     );
 
-    this.socket.on(
-      "TEXT_UPDATE",
-      (data: {
-        changes: {
-          range: {
-            startLineNumber: number;
-            startColumn: number;
-            endLineNumber: number;
-            endColumn: number;
-          };
-          text: string;
-          forceMoveMarkers: boolean;
-          version: number;
-        }[];
-        username: string;
-      }) => {
-        dispatch(setTextUpdate(data));
-      }
-    );
+    this.socket.on("TEXT_UPDATE", (payload: TextUpdate) => {
+      dispatch(setTextUpdate(payload));
+    });
 
     this.socket.on("connect_error", (err: Error) => {
       console.error("Socket error:", err.message);
@@ -166,27 +124,13 @@ class SocketService {
     this.socket?.emit("NEW_EDITOR_STATE", payload);
   }
 
-  sendTextSelection(
-    selection: {
-      startLineNumber: number;
-      startColumn: number;
-      endLineNumber: number;
-      endColumn: number;
-    },
-    username: string
-  ) {
-    const payload = { selection, username };
+  sendTextSelection(payload: TextSelection) {
     this.socket?.emit("TEXT_SELECTION", payload);
   }
 
-  sendCursorPosition(
-    position: { lineNumber: number; column: number },
-    username: string
-  ) {
-    const payload = { position, username };
+  sendCursorPosition(payload: CursorPosition) {
     this.socket?.emit("CURSOR_POSITION", payload);
   }
-
   sendUserActivity(isActive: boolean, username: string) {
     const payload = { isActive, username };
     this.socket?.emit("USER_ACTIVITY", payload);
@@ -197,21 +141,7 @@ class SocketService {
     this.socket?.emit("LANGUAGE_CHANGE", payload);
   }
 
-  sendTextUpdate(
-    changes: {
-      range: {
-        startLineNumber: number;
-        startColumn: number;
-        endLineNumber: number;
-        endColumn: number;
-      };
-      text: string;
-      forceMoveMarkers: boolean;
-      version: number;
-    }[],
-    username: string
-  ) {
-    const payload = { changes, username };
+  sendTextUpdate(payload: TextUpdate) {
     this.socket?.emit("TEXT_UPDATE", payload);
   }
 
