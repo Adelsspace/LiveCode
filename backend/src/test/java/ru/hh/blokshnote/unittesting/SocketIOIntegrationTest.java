@@ -6,14 +6,15 @@ import org.assertj.core.api.Assertions;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import ru.hh.blokshnote.entity.Room;
 import ru.hh.blokshnote.entity.User;
 import ru.hh.blokshnote.service.RoomService;
+import com.corundumstudio.socketio.SocketIOServer;
 
 import java.net.URISyntaxException;
 import java.util.Map;
@@ -34,24 +35,21 @@ import static ru.hh.blokshnote.utility.WsMessageType.TEXT_UPDATE;
 import static ru.hh.blokshnote.utility.WsMessageType.USERS_UPDATE;
 import static ru.hh.blokshnote.utility.WsMessageType.USER_ACTIVITY;
 
-@SpringBootTest
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, 
+    properties = {"socketio.enabled=true", "socketio.port=19092"})
 public class SocketIOIntegrationTest extends AbstractIntegrationTest {
 
   @MockitoBean
   private RoomService roomService;
+
+  @Autowired
+  private SocketIOServer socketIOServer;
 
   private static final int TIMEOUT = 1500;
   private final String senderName = "John";
   private final String receiverName = "Jane";
   private final String adminName = "John";
   private final String nonAdminName = "Jane";
-
-  @BeforeAll
-  static void startServer() {
-    System.setProperty("socketio.host", "localhost");
-    System.setProperty("socketio.port", "9092");
-  }
-
 
   @Test
   public void testClientConnects() throws URISyntaxException, JSONException, ExecutionException, InterruptedException {
@@ -478,8 +476,9 @@ public class SocketIOIntegrationTest extends AbstractIntegrationTest {
     options.reconnection = false;
     options.forceNew = true;
 
+    int actualPort = socketIOServer.getConfiguration().getPort();
     return IO.socket(
-        "http://localhost:9092/ws/room/connect?roomUuid=%s&user=%s".formatted(roomUuid, userName),
+        "http://localhost:" + actualPort + "/ws/room/connect?roomUuid=%s&user=%s".formatted(roomUuid, userName),
         options
     );
   }

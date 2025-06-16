@@ -4,6 +4,7 @@ import com.corundumstudio.socketio.AuthorizationResult;
 import com.corundumstudio.socketio.Configuration;
 import com.corundumstudio.socketio.SocketIOServer;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import ru.hh.blokshnote.handler.RoomSocketHandler;
 import ru.hh.blokshnote.utility.WsPathParam;
@@ -19,6 +20,7 @@ public class WebSocketConfig {
   private int port;
 
   @Bean(destroyMethod = "stop")
+  @ConditionalOnProperty(name = "socketio.enabled", havingValue = "true", matchIfMissing = true)
   public SocketIOServer socketIOServer(RoomSocketHandler handler) {
     Configuration config = new Configuration();
     config.setHostname(host);
