@@ -8,14 +8,15 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import ru.hh.blokshnote.entity.Room;
 import ru.hh.blokshnote.entity.User;
 import ru.hh.blokshnote.service.RoomService;
-import com.corundumstudio.socketio.SocketIOServer;
 
+import java.io.IOException;
+import java.net.ServerSocket;
 import java.net.URISyntaxException;
 import java.util.Map;
 import java.util.UUID;
@@ -35,21 +36,40 @@ import static ru.hh.blokshnote.utility.WsMessageType.TEXT_UPDATE;
 import static ru.hh.blokshnote.utility.WsMessageType.USERS_UPDATE;
 import static ru.hh.blokshnote.utility.WsMessageType.USER_ACTIVITY;
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, 
-    properties = {"socketio.enabled=true", "socketio.port=19092"})
-public class SocketIOIntegrationTest extends AbstractIntegrationTest {
+public class SocketIOIntegrationTest extends NoKafkaAbstractIntegrationTest {
 
   @MockitoBean
   private RoomService roomService;
-
-  @Autowired
-  private SocketIOServer socketIOServer;
 
   private static final int TIMEOUT = 1500;
   private final String senderName = "John";
   private final String receiverName = "Jane";
   private final String adminName = "John";
   private final String nonAdminName = "Jane";
+
+  private static int socketIoPort;
+
+  @DynamicPropertySource
+  static void configureProperties(DynamicPropertyRegistry registry) {
+    socketIoPort = findAvailablePort();
+    registry.add("socketio.port", () -> socketIoPort);
+  }
+
+  private static int findAvailablePort() {
+    try (ServerSocket socket = new ServerSocket(0)) {
+      return socket.getLocalPort();
+    } catch (IOException e) {
+      throw new RuntimeException("Could not find available port", e);
+    }
+  }
+
+  private void ensureSocketsClosed(Socket... sockets) {
+    for (Socket socket : sockets) {
+      if (socket != null && socket.connected()) {
+        socket.disconnect();
+      }
+    }
+  }
 
   @Test
   public void testClientConnects() throws URISyntaxException, JSONException, ExecutionException, InterruptedException {
@@ -80,7 +100,7 @@ public class SocketIOIntegrationTest extends AbstractIntegrationTest {
     Assertions.assertThat(usersState.getString("username")).isEqualTo(userName);
     Assertions.assertThat(usersState.getBoolean("isActive")).isTrue();
     Assertions.assertThat(usersState.getBoolean("isAdmin")).isFalse();
-    socket.disconnect();
+    ensureSocketsClosed(socket);
   }
 
   @Test
@@ -117,8 +137,7 @@ public class SocketIOIntegrationTest extends AbstractIntegrationTest {
     Assertions.assertThat(resultSelection.getInt("startColumn")).isEqualTo(1);
     Assertions.assertThat(resultSelection.getInt("endColumn")).isEqualTo(2);
 
-    sender.disconnect();
-    receiver.disconnect();
+    ensureSocketsClosed(sender, receiver);
   }
 
   @Test
@@ -151,8 +170,7 @@ public class SocketIOIntegrationTest extends AbstractIntegrationTest {
     Assertions.assertThat(resultPosition.getInt("lineNumber")).isEqualTo(1);
     Assertions.assertThat(resultPosition.getInt("column")).isEqualTo(2);
 
-    sender.disconnect();
-    receiver.disconnect();
+    ensureSocketsClosed(sender, receiver);
   }
 
   @Test
@@ -176,8 +194,7 @@ public class SocketIOIntegrationTest extends AbstractIntegrationTest {
     Assertions.assertThat(result.getString("username")).isEqualTo(senderName);
     Assertions.assertThat(result.getBoolean("isActive")).isFalse();
 
-    sender.disconnect();
-    receiver.disconnect();
+    ensureSocketsClosed(sender, receiver);
   }
 
   @Test
@@ -202,8 +219,7 @@ public class SocketIOIntegrationTest extends AbstractIntegrationTest {
     Assertions.assertThat(result.getString("username")).isEqualTo(senderName);
     Assertions.assertThat(result.getString("language")).isEqualTo(language);
 
-    sender.disconnect();
-    receiver.disconnect();
+    ensureSocketsClosed(sender, receiver);
   }
 
   @Test
@@ -241,8 +257,7 @@ public class SocketIOIntegrationTest extends AbstractIntegrationTest {
 
     Assertions.assertThat(result).usingRecursiveComparison().isEqualTo(textUpdateDto);
 
-    sender.disconnect();
-    receiver.disconnect();
+    ensureSocketsClosed(sender, receiver);
   }
 
   @Test
@@ -305,7 +320,7 @@ public class SocketIOIntegrationTest extends AbstractIntegrationTest {
     Assertions.assertThat(johnState.getBoolean("isActive")).isTrue();
     Assertions.assertThat(johnState.getBoolean("isAdmin")).isFalse();
 
-    clientStayConnected.disconnect();
+    ensureSocketsClosed(clientStayConnected);
   }
 
   @Test
@@ -333,8 +348,7 @@ public class SocketIOIntegrationTest extends AbstractIntegrationTest {
     Assertions.assertThat(nonAdminClient.connected()).isFalse();
     Assertions.assertThat(adminClient.connected()).isTrue();
 
-    adminClient.disconnect();
-    nonAdminClient.disconnect();
+    ensureSocketsClosed(adminClient, nonAdminClient);
   }
 
   @Test
@@ -361,8 +375,7 @@ public class SocketIOIntegrationTest extends AbstractIntegrationTest {
     Assertions.assertThat(nonAdminClient.connected()).isTrue();
     Assertions.assertThat(adminClient.connected()).isTrue();
 
-    adminClient.disconnect();
-    nonAdminClient.disconnect();
+    ensureSocketsClosed(adminClient, nonAdminClient);
   }
 
   @Test
@@ -395,7 +408,7 @@ public class SocketIOIntegrationTest extends AbstractIntegrationTest {
 
     Assertions.assertThat(adminResult).usingRecursiveComparison().isEqualTo(openRoomDto);
 
-    adminClient.disconnect();
+    ensureSocketsClosed(adminClient);
   }
 
   @Test
@@ -425,7 +438,7 @@ public class SocketIOIntegrationTest extends AbstractIntegrationTest {
     Assertions.assertThatThrownBy(() -> nonAdminOpenRoomFuture.orTimeout(TIMEOUT, TimeUnit.MILLISECONDS).get())
         .isInstanceOf(ExecutionException.class);
 
-    nonAdminClient.disconnect();
+    ensureSocketsClosed(nonAdminClient);
   }
 
   @Test
@@ -448,7 +461,7 @@ public class SocketIOIntegrationTest extends AbstractIntegrationTest {
     adminClient.connect();
     Assertions.assertThat(adminConnect.await(TIMEOUT, TimeUnit.MILLISECONDS)).isTrue();
     Assertions.assertThat(adminClient.connected()).isTrue();
-    adminClient.disconnect();
+    ensureSocketsClosed(adminClient);
   }
 
   @Test
@@ -468,19 +481,17 @@ public class SocketIOIntegrationTest extends AbstractIntegrationTest {
     nonAdminClient.connect();
     Assertions.assertThat(nonAdminConnect.await(TIMEOUT, TimeUnit.MILLISECONDS)).isFalse();
     Assertions.assertThat(nonAdminClient.connected()).isFalse();
-    nonAdminClient.disconnect();
+    ensureSocketsClosed(nonAdminClient);
   }
 
   private Socket initClient(UUID roomUuid, String userName) throws URISyntaxException {
     IO.Options options = new IO.Options();
     options.reconnection = false;
     options.forceNew = true;
+    options.timeout = 5000;
 
-    int actualPort = socketIOServer.getConfiguration().getPort();
-    return IO.socket(
-        "http://localhost:" + actualPort + "/ws/room/connect?roomUuid=%s&user=%s".formatted(roomUuid, userName),
-        options
-    );
+    String url = "http://localhost:%d/ws/room/connect?roomUuid=%s&user=%s".formatted(socketIoPort, roomUuid, userName);
+    return IO.socket(url, options);
   }
 
   private void clientsConnect(UUID roomUuid, Socket sender, Socket receiver) throws ExecutionException, InterruptedException {
@@ -492,7 +503,6 @@ public class SocketIOIntegrationTest extends AbstractIntegrationTest {
 
     CompletableFuture<JSONObject> senderEditorStateFuture = new CompletableFuture<>();
     CompletableFuture<JSONObject> receiverEditorStateFuture = new CompletableFuture<>();
-
 
     receiver.on(NEW_EDITOR_STATE.name(), args -> receiverEditorStateFuture.complete((JSONObject) args[0]));
     sender.on(NEW_EDITOR_STATE.name(), args -> senderEditorStateFuture.complete((JSONObject) args[0]));

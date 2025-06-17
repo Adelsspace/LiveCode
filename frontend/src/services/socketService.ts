@@ -43,13 +43,6 @@ class SocketService {
         });
 
         this.setupListeners();
-
-        this.socket.on(
-          "NEW_EDITOR_STATE",
-          (editorState: { text: string; language: string }) => {
-            dispatch(setEditorState(editorState));
-          }
-        );
       }
 
       if ("error" in result) {
