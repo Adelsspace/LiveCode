@@ -56,6 +56,7 @@ const MonacoEditor = ({
     (state) => state.room.languageChange?.language
   );
   const hasCalledUpdate = useRef(false);
+  const hasRun = useRef(false);
 
   useEffect(() => {
     if (!editorRef.current || !textUpdate) return;
@@ -209,12 +210,12 @@ const MonacoEditor = ({
   }, [textSelections, cursorPositions, users, dispatch]);
 
   useEffect(() => {
-    if (!editorRef.current || !editorState) return;
+    if (!editorRef.current || !editorState || hasRun.current) return;
 
     const model = editorRef.current.getModel();
     if (!model || model.getValue() === editorState.text) return;
-
     model.setValue(editorState.text);
+    hasRun.current = true;
   }, [editorState]);
 
   const handleEditorMount = (editor: monaco.editor.IStandaloneCodeEditor) => {
