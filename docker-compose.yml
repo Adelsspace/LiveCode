@@ -35,7 +35,6 @@ services:
       LLM_KEY: ${LLM_KEY:-no-key}
       SOCKETIO_BROADCAST_DEBUG: true
       SPRING_KAFKA_BOOTSTRAP-SERVERS: kafka:29092
-      KAFKA_GROUP_ID: "instance-1"
     depends_on:
       postgres:
         condition: service_healthy
