@@ -16,6 +16,8 @@ services:
       start_period: 10s
     volumes:
       - pgdata:/var/lib/postgresql/data
+    networks:
+      - internal
 
   code-backend:
     image: ghcr.io/mishablin/bloksh-backend:latest
@@ -27,15 +29,24 @@ services:
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
       SOCKETIO_PROTOCOL: wss
       LLM_KEY: ${LLM_KEY:-no-key}
+      SPRING_KAFKA_BOOTSTRAP-SERVERS: kafka:29092
     depends_on:
       postgres:
         condition: service_healthy
+      kafka:
+        condition: service_healthy
+      init-kafka:
+        condition: service_completed_successfully
+    networks:
+      - internal
 
   code-frontend:
     image: ghcr.io/mishablin/bloksh-frontend:latest
     restart: unless-stopped
     depends_on:
       - code-backend
+    networks:
+      - internal
 
   nginx:
     image: nginx:1.27
@@ -50,6 +61,8 @@ services:
     depends_on:
       - code-backend
       - code-frontend
+    networks:
+      - internal
 
   liquibase:
     image: liquibase/liquibase:4.27
@@ -64,6 +77,8 @@ services:
       - LIQUIBASE_COMMAND_PASSWORD=${POSTGRES_PASSWORD}
       - LIQUIBASE_COMMAND_CHANGELOG_FILE=db.changelog-master.yaml
     working_dir: /liquibase/changelog
+    networks:
+      - internal
 
   kafka:
     image: confluentinc/cp-kafka:7.6.0
@@ -89,7 +104,8 @@ services:
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
     volumes:
       - kafka-data:/var/lib/kafka/data
-
+    networks:
+      - internal
 
   init-kafka:
     image: confluentinc/cp-kafka:7.6.0
@@ -109,6 +125,11 @@ services:
       echo -e 'Successfully created the following topics:'
       kafka-topics --bootstrap-server kafka:29092 --list
       "
+    networks:
+      - internal
+
+networks:
+  internal:
 
 volumes:
   pgdata:
