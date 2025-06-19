@@ -25,6 +25,7 @@ const editorLanguages: EditorLanguage[] = [
   "typescript",
   "python",
   "java",
+  "plaintext",
 ];
 
 const editorThemes: EditorTheme[] = ["vs-dark", "light", "hc-black"];
