@@ -96,7 +96,6 @@ const MonacoEditor = ({
       const user = users.find((u: User) => u.username === username);
       if (!user) return;
 
-      const colorClass = user.color.replace("#", "");
       newDecorations.push({
         range: new monaco.Range(
           selection.selection.startLineNumber,
@@ -105,7 +104,7 @@ const MonacoEditor = ({
           selection.selection.endColumn
         ),
         options: {
-          className: `${styles.selection} ${styles[`selection-${colorClass}`]}`,
+          className: `${styles.selection} ${styles[`selection-${user.color}`]}`,
           isWholeLine: false,
         },
       });
@@ -114,7 +113,6 @@ const MonacoEditor = ({
     Object.entries(cursorPositions).forEach(([username, position]) => {
       const user = users.find((u: User) => u.username === username);
       if (!user) return;
-      const colorClass = user.color.replace("#", "");
 
       newDecorations.push({
         range: new monaco.Range(
@@ -124,7 +122,7 @@ const MonacoEditor = ({
           position.position.column + 1
         ),
         options: {
-          className: `${styles.cursor} ${styles[`cursor-${colorClass}`]}`,
+          className: `${styles.cursor} ${styles[`cursor-${user.color}`]}`,
           stickiness:
             monaco.editor.TrackedRangeStickiness.NeverGrowsWhenTypingAtEdges,
         },
@@ -164,7 +162,7 @@ const MonacoEditor = ({
           label.style.zIndex = "100";
           label.style.opacity = "1";
           label.style.transition = "opacity 0.5s";
-          label.style.backgroundColor = user.color;
+          label.style.backgroundColor = `#${user.color}`;
 
           container.appendChild(label);
           cursorLabelsRef.current[username] = label;
