@@ -15,26 +15,26 @@ import java.util.Map;
 @RequestMapping("/api")
 public class HealthController {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(HealthController.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(HealthController.class);
 
-    @GetMapping("/health")
-    public ResponseEntity<Map<String, Object>> health() {
-        LOGGER.debug("Health check requested");
-        
-        Map<String, Object> healthStatus = new HashMap<>();
-        healthStatus.put("status", "UP");
-        healthStatus.put("timestamp", Instant.now().toString());
-        healthStatus.put("service", "blokshnote-backend");
-        
-        Runtime runtime = Runtime.getRuntime();
-        Map<String, Object> systemInfo = new HashMap<>();
-        systemInfo.put("totalMemory", runtime.totalMemory());
-        systemInfo.put("freeMemory", runtime.freeMemory());
-        systemInfo.put("maxMemory", runtime.maxMemory());
-        systemInfo.put("processors", runtime.availableProcessors());
-        
-        healthStatus.put("system", systemInfo);
-        
-        return ResponseEntity.ok(healthStatus);
-    }
-} 
+  @GetMapping("/health")
+  public ResponseEntity<Map<String, Object>> health() {
+    LOGGER.debug("Health check requested");
+
+    Map<String, Object> healthStatus = new HashMap<>();
+    healthStatus.put("status", "UP");
+    healthStatus.put("timestamp", Instant.now().toString());
+    healthStatus.put("service", "blokshnote-backend");
+
+    Runtime runtime = Runtime.getRuntime();
+    Map<String, Object> systemInfo = new HashMap<>();
+    systemInfo.put("totalMemory", runtime.totalMemory());
+    systemInfo.put("freeMemory", runtime.freeMemory());
+    systemInfo.put("maxMemory", runtime.maxMemory());
+    systemInfo.put("processors", runtime.availableProcessors());
+
+    healthStatus.put("system", systemInfo);
+
+    return ResponseEntity.ok(healthStatus);
+  }
+}
