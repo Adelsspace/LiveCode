@@ -138,13 +138,22 @@ jobs:
           docker tag ${{ needs.build-images.outputs.backend-image }} ghcr.io/mishablin/bloksh-backend:latest
           docker tag ${{ needs.build-images.outputs.frontend-image }} ghcr.io/mishablin/bloksh-frontend:latest
 
-      - name: Create test environment file
+      - name: Create test environment file and dummy SSL certificates
         run: |
+          # Create dummy SSL certificates for testing
+          mkdir -p ./ssl-test
+          touch ./ssl-test/fullchain.pem
+          touch ./ssl-test/privkey.pem
+          
           cat > .env.test << EOF
           POSTGRES_USER=test-user
           POSTGRES_PASSWORD=test-password
           POSTGRES_DB=test-db
           LLM_KEY=test-key
+          NGINX_CONFIG=./nginx/default.conf
+          NGINX_HTTPS_PORT=8443
+          SSL_CERT_PATH=./ssl-test/fullchain.pem
+          SSL_KEY_PATH=./ssl-test/privkey.pem
           EOF
 
       - name: Start test environment
@@ -174,6 +183,7 @@ jobs:
         run: |
           docker compose -f docker-compose.prod.yml down -v
           docker system prune -f
+          rm -rf ./ssl-test
 
   push-images:
     name: Push Images to Registry
