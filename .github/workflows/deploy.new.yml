@@ -149,7 +149,7 @@ jobs:
 
       - name: Start test environment
         run: |
-          docker-compose -f docker-compose.prod.yml --env-file .env.test up -d
+          docker compose -f docker-compose.prod.yml --env-file .env.test up -d
           
       - name: Wait for services to be healthy
         run: |
@@ -178,7 +178,7 @@ jobs:
       - name: Cleanup test environment
         if: always()
         run: |
-          docker-compose -f docker-compose.prod.yml down -v
+          docker compose -f docker-compose.prod.yml down -v
           docker system prune -f
 
   push-images:
