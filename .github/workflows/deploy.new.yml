@@ -1,0 +1,317 @@
+name: Test & Deploy
+on:
+  pull_request:
+    branches: [ deploy ]
+  push:
+    branches: [ deploy ]
+
+permissions:
+  contents: write
+  packages: write
+  pull-requests: write
+
+env:
+  REGISTRY: ghcr.io/${{ secrets.REGISTRY_USER }}
+  APP_BACKEND: bloksh-backend
+  APP_FRONTEND: bloksh-frontend
+  IMAGE_TAG: ${{ github.sha }}
+
+jobs:
+  unit-tests:
+    name: Unit Tests
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Make Maven wrapper executable
+        run: chmod +x backend/mvnw
+
+      - name: Run backend unit tests
+        working-directory: backend
+        run: ./mvnw test
+
+  build-images:
+    name: Build Docker Images
+    runs-on: ubuntu-22.04
+    needs: unit-tests
+    outputs:
+      backend-image: ${{ steps.image-tags.outputs.backend-image }}
+      frontend-image: ${{ steps.image-tags.outputs.frontend-image }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Set up Pack CLI
+        uses: buildpacks/github-actions/setup-pack@v5.0.0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Build frontend
+        working-directory: frontend
+        run: |
+          npm ci
+          npm run build
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build backend image (local)
+        run: |
+          pack build ${{ env.APP_BACKEND }}:${{ env.IMAGE_TAG }} \
+            --path ./backend \
+            --builder paketobuildpacks/builder:base
+
+      - name: Build frontend image (local)
+        uses: docker/build-push-action@v6
+        with:
+          context: frontend
+          file: frontend/Dockerfile
+          load: true
+          tags: ${{ env.APP_FRONTEND }}:${{ env.IMAGE_TAG }}
+
+      - name: Set image tags output
+        id: image-tags
+        run: |
+          echo "backend-image=${{ env.APP_BACKEND }}:${{ env.IMAGE_TAG }}" >> $GITHUB_OUTPUT
+          echo "frontend-image=${{ env.APP_FRONTEND }}:${{ env.IMAGE_TAG }}" >> $GITHUB_OUTPUT
+
+      - name: Save Docker images
+        run: |
+          docker save ${{ env.APP_BACKEND }}:${{ env.IMAGE_TAG }} | gzip > backend-image.tar.gz
+          docker save ${{ env.APP_FRONTEND }}:${{ env.IMAGE_TAG }} | gzip > frontend-image.tar.gz
+
+      - name: Upload backend image artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-image
+          path: backend-image.tar.gz
+          retention-days: 1
+
+      - name: Upload frontend image artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-image
+          path: frontend-image.tar.gz
+          retention-days: 1
+
+  e2e-tests:
+    name: End-to-End Tests
+    runs-on: ubuntu-22.04
+    needs: build-images
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download backend image artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: backend-image
+
+      - name: Download frontend image artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-image
+
+      - name: Load Docker images
+        run: |
+          docker load < backend-image.tar.gz
+          docker load < frontend-image.tar.gz
+
+      - name: Tag images for testing
+        run: |
+          docker tag ${{ needs.build-images.outputs.backend-image }} ghcr.io/mishablin/bloksh-backend:latest
+          docker tag ${{ needs.build-images.outputs.frontend-image }} ghcr.io/mishablin/bloksh-frontend:latest
+
+      - name: Create test environment file
+        run: |
+          cat > .env.test << EOF
+          POSTGRES_USER=test-user
+          POSTGRES_PASSWORD=test-password
+          POSTGRES_DB=test-db
+          LLM_KEY=test-key
+          EOF
+
+      - name: Start test environment
+        run: |
+          docker-compose -f docker-compose.prod.yml --env-file .env.test up -d
+          
+      - name: Wait for services to be healthy
+        run: |
+          echo "Waiting for services to start..."
+          timeout 300 bash -c '
+            until curl -f http://localhost:80/api/health 2>/dev/null; do
+              echo "Waiting for backend to be ready..."
+              sleep 5
+            done
+          '
+          echo "Services are ready!"
+
+      - name: Run E2E health checks
+        run: |
+          # Test backend health endpoint
+          curl -f http://localhost:80/api/health || exit 1
+          
+          # Test frontend is serving
+          curl -f http://localhost:80/ || exit 1
+          
+          # Test WebSocket endpoint (basic connection test)
+          # curl -f http://localhost:80/ws/info || exit 1
+          
+          echo "Basic E2E tests passed!"
+
+      - name: Cleanup test environment
+        if: always()
+        run: |
+          docker-compose -f docker-compose.prod.yml down -v
+          docker system prune -f
+
+  push-images:
+    name: Push Images to Registry
+    runs-on: ubuntu-22.04
+    if: github.event_name == 'push'
+    needs: [build-images, e2e-tests]
+    steps:
+      - name: Download backend image artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: backend-image
+
+      - name: Download frontend image artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-image
+
+      - name: Load Docker images
+        run: |
+          docker load < backend-image.tar.gz
+          docker load < frontend-image.tar.gz
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ secrets.REGISTRY_USER }}
+          password: ${{ secrets.REGISTRY_TOKEN }}
+
+      - name: Tag and push images
+        run: |
+          # Tag and push backend image
+          docker tag ${{ needs.build-images.outputs.backend-image }} ${{ env.REGISTRY }}/${{ env.APP_BACKEND }}:latest
+          docker tag ${{ needs.build-images.outputs.backend-image }} ${{ env.REGISTRY }}/${{ env.APP_BACKEND }}:${{ env.IMAGE_TAG }}
+          docker push ${{ env.REGISTRY }}/${{ env.APP_BACKEND }}:latest
+          docker push ${{ env.REGISTRY }}/${{ env.APP_BACKEND }}:${{ env.IMAGE_TAG }}
+          
+          # Tag and push frontend image
+          docker tag ${{ needs.build-images.outputs.frontend-image }} ${{ env.REGISTRY }}/${{ env.APP_FRONTEND }}:latest
+          docker tag ${{ needs.build-images.outputs.frontend-image }} ${{ env.REGISTRY }}/${{ env.APP_FRONTEND }}:${{ env.IMAGE_TAG }}
+          docker push ${{ env.REGISTRY }}/${{ env.APP_FRONTEND }}:latest
+          docker push ${{ env.REGISTRY }}/${{ env.APP_FRONTEND }}:${{ env.IMAGE_TAG }}
+
+  deploy:
+    name: Deploy to Production
+    runs-on: ubuntu-22.04
+    if: github.event_name == 'push' && github.ref == 'refs/heads/deploy'
+    needs: [e2e-tests, push-images]
+    environment: production
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Stop docker compose on remote
+        uses: appleboy/ssh-action@v1
+        env:
+          APPTOKEN: ${{ secrets.REGISTRY_TOKEN }}
+          USERNAME: ${{ secrets.REGISTRY_USER }}
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          envs: APPTOKEN,USERNAME
+          script: |
+            echo $APPTOKEN | docker login ghcr.io -u $USERNAME --password-stdin
+            cd ~/bloksh/
+            docker-compose -f ./docker-compose.prod.yml down
+
+      - name: Copy nginx configuration to remote server
+        uses: appleboy/scp-action@v1
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          source: "./nginx/prod.conf"
+          target: "~/bloksh"
+
+      - name: Copy docker-compose file to remote server
+        uses: appleboy/scp-action@v1
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          source: "./docker-compose.prod.yml"
+          target: "~/bloksh"
+
+      - name: Copy liquibase files to remote server
+        uses: appleboy/scp-action@v1
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          source: "./backend/src/main/resources/db/changelog"
+          target: "~/bloksh"
+          strip_components: 6
+
+      - name: Deploy to production
+        uses: appleboy/ssh-action@v1
+        env:
+          APPTOKEN: ${{ secrets.REGISTRY_TOKEN }}
+          USERNAME: ${{ secrets.REGISTRY_USER }}
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          envs: APPTOKEN,USERNAME
+          script: |
+            echo $APPTOKEN | docker login ghcr.io -u $USERNAME --password-stdin
+            cd ~/bloksh/
+            docker-compose -f ./docker-compose.prod.yml pull
+            docker-compose -f ./docker-compose.prod.yml up --build -d
+
+  cleanup:
+    name: Cleanup Artifacts
+    runs-on: ubuntu-22.04
+    if: always() && github.event_name == 'push'
+    needs: [build-images, e2e-tests, push-images, deploy]
+    steps:
+      - name: Delete artifacts
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const artifacts = await github.rest.actions.listWorkflowRunArtifacts({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              run_id: context.runId,
+            });
+            
+            for (const artifact of artifacts.data.artifacts) {
+              await github.rest.actions.deleteArtifact({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                artifact_id: artifact.id,
+              });
+            }

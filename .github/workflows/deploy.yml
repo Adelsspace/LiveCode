@@ -1,148 +1,148 @@
-name: Test & Deploy
+# name: Test & Deploy
 
-on:
-  push:
-    branches: [ deploy ]
+# on:
+#   push:
+#     branches: [ deploy ]
 
-permissions:
-  contents: write
-  packages: write
+# permissions:
+#   contents: write
+#   packages: write
 
-env:
-  REGISTRY: ghcr.io/${{ secrets.REGISTRY_USER }}
-  APP_BACKEND: bloksh-backend
-  APP_FRONTEND: bloksh-frontend
+# env:
+#   REGISTRY: ghcr.io/${{ secrets.REGISTRY_USER }}
+#   APP_BACKEND: bloksh-backend
+#   APP_FRONTEND: bloksh-frontend
 
-jobs:
-  build-test-push:
-    runs-on: ubuntu-22.04
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: deploy
+# jobs:
+#   build-test-push:
+#     runs-on: ubuntu-22.04
+#     steps:
+#       - uses: actions/checkout@v4
+#         with:
+#           ref: deploy
 
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: 17
+#       - name: Set up JDK 17
+#         uses: actions/setup-java@v4
+#         with:
+#           distribution: temurin
+#           java-version: 17
 
-      - name: Make Maven wrapper executable
-        run: chmod +x backend/mvnw
+#       - name: Make Maven wrapper executable
+#         run: chmod +x backend/mvnw
 
-      - name: Run backend tests
-        working-directory: backend
-        run: ./mvnw test
+#       - name: Run backend tests
+#         working-directory: backend
+#         run: ./mvnw test
 
-      - name: Set up Pack CLI
-        uses: buildpacks/github-actions/setup-pack@v5.0.0
+#       - name: Set up Pack CLI
+#         uses: buildpacks/github-actions/setup-pack@v5.0.0
 
-      - name: Login to GitHub Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ secrets.REGISTRY_USER }}
-          password: ${{ secrets.REGISTRY_TOKEN }}
+#       - name: Login to GitHub Container Registry
+#         uses: docker/login-action@v3
+#         with:
+#           registry: ghcr.io
+#           username: ${{ secrets.REGISTRY_USER }}
+#           password: ${{ secrets.REGISTRY_TOKEN }}
 
-      - name: Build & push backend image with Buildpacks
-        run: |
-          pack build ${{ env.REGISTRY }}/${{ env.APP_BACKEND }}:latest \
-            --path ./backend \
-            --builder paketobuildpacks/builder:base \
-            --publish
+#       - name: Build & push backend image with Buildpacks
+#         run: |
+#           pack build ${{ env.REGISTRY }}/${{ env.APP_BACKEND }}:latest \
+#             --path ./backend \
+#             --builder paketobuildpacks/builder:base \
+#             --publish
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
+#       - name: Set up Node.js
+#         uses: actions/setup-node@v4
+#         with:
+#           node-version: '22'
 
-      - name: Install & build frontend
-        working-directory: frontend
-        run: |
-          npm ci
-          npm run build
+#       - name: Install & build frontend
+#         working-directory: frontend
+#         run: |
+#           npm ci
+#           npm run build
 
-      - name: Build & push frontend image
-        uses: docker/build-push-action@v6
-        with:
-          context: frontend
-          file: frontend/Dockerfile
-          push: true
-          tags: ${{ env.REGISTRY }}/${{ env.APP_FRONTEND }}:latest
+#       - name: Build & push frontend image
+#         uses: docker/build-push-action@v6
+#         with:
+#           context: frontend
+#           file: frontend/Dockerfile
+#           push: true
+#           tags: ${{ env.REGISTRY }}/${{ env.APP_FRONTEND }}:latest
 
-  deploy:
-    needs: build-test-push
-    runs-on: ubuntu-22.04
-    if: github.ref == 'refs/heads/deploy'
-    steps:
-      - name: Install SSH client
-        run: sudo apt-get update && sudo apt-get install -y ssh
+#   deploy:
+#     needs: build-test-push
+#     runs-on: ubuntu-22.04
+#     if: github.ref == 'refs/heads/deploy'
+#     steps:
+#       - name: Install SSH client
+#         run: sudo apt-get update && sudo apt-get install -y ssh
 
-      - name: Copy SSH key
-        uses: webfactory/ssh-agent@v0.9.0
-        with:
-          ssh-private-key: ${{ secrets.SERVER_SSH_KEY }}
+#       - name: Copy SSH key
+#         uses: webfactory/ssh-agent@v0.9.0
+#         with:
+#           ssh-private-key: ${{ secrets.SERVER_SSH_KEY }}
 
-      - name: Checkout repo
-        uses: actions/checkout@v4
-        with:
-          ref: deploy
+#       - name: Checkout repo
+#         uses: actions/checkout@v4
+#         with:
+#           ref: deploy
 
-      - name: Stop docker compose on remote
-        uses: appleboy/ssh-action@v1
-        env:
-          APPTOKEN: ${{ secrets.REGISTRY_TOKEN }}
-          USERNAME: ${{ secrets.REGISTRY_USER }}
-        with:
-          host: ${{ secrets.SERVER_HOST }}
-          username: ${{ secrets.SERVER_USER }}
-          key: ${{ secrets.SERVER_SSH_KEY }}
-          envs: APPTOKEN,USERNAME
-          script: |
-            echo $APPTOKEN | docker login ghcr.io -u $USERNAME --password-stdin
-            cd ~/bloksh/
-            docker-compose -f ./docker-compose.prod.yml down
+#       - name: Stop docker compose on remote
+#         uses: appleboy/ssh-action@v1
+#         env:
+#           APPTOKEN: ${{ secrets.REGISTRY_TOKEN }}
+#           USERNAME: ${{ secrets.REGISTRY_USER }}
+#         with:
+#           host: ${{ secrets.SERVER_HOST }}
+#           username: ${{ secrets.SERVER_USER }}
+#           key: ${{ secrets.SERVER_SSH_KEY }}
+#           envs: APPTOKEN,USERNAME
+#           script: |
+#             echo $APPTOKEN | docker login ghcr.io -u $USERNAME --password-stdin
+#             cd ~/bloksh/
+#             docker-compose -f ./docker-compose.prod.yml down
 
-      - name: Copy nginx configuration to remote server
-        uses: appleboy/scp-action@v1
-        with:
-          host: ${{ secrets.SERVER_HOST }}
-          username: ${{ secrets.SERVER_USER }}
-          key: ${{ secrets.SERVER_SSH_KEY }}
-          source: "./nginx/prod.conf"
-          target: "~/bloksh"
+#       - name: Copy nginx configuration to remote server
+#         uses: appleboy/scp-action@v1
+#         with:
+#           host: ${{ secrets.SERVER_HOST }}
+#           username: ${{ secrets.SERVER_USER }}
+#           key: ${{ secrets.SERVER_SSH_KEY }}
+#           source: "./nginx/prod.conf"
+#           target: "~/bloksh"
 
-      - name: Copy docker-compose file to remote server
-        uses: appleboy/scp-action@v1
-        with:
-          host: ${{ secrets.SERVER_HOST }}
-          username: ${{ secrets.SERVER_USER }}
-          key: ${{ secrets.SERVER_SSH_KEY }}
-          source: "./docker-compose.prod.yml"
-          target: "~/bloksh"
+#       - name: Copy docker-compose file to remote server
+#         uses: appleboy/scp-action@v1
+#         with:
+#           host: ${{ secrets.SERVER_HOST }}
+#           username: ${{ secrets.SERVER_USER }}
+#           key: ${{ secrets.SERVER_SSH_KEY }}
+#           source: "./docker-compose.prod.yml"
+#           target: "~/bloksh"
 
-      - name: Copy liquibase files to remote server
-        uses: appleboy/scp-action@v1
-        with:
-          host: ${{ secrets.SERVER_HOST }}
-          username: ${{ secrets.SERVER_USER }}
-          key: ${{ secrets.SERVER_SSH_KEY }}
-          source: "./backend/src/main/resources/db/changelog"
-          target: "~/bloksh"
-          strip_components: 6
+#       - name: Copy liquibase files to remote server
+#         uses: appleboy/scp-action@v1
+#         with:
+#           host: ${{ secrets.SERVER_HOST }}
+#           username: ${{ secrets.SERVER_USER }}
+#           key: ${{ secrets.SERVER_SSH_KEY }}
+#           source: "./backend/src/main/resources/db/changelog"
+#           target: "~/bloksh"
+#           strip_components: 6
 
-      - name: Run remote docker-compose via ssh
-        uses: appleboy/ssh-action@v1
-        env:
-          APPTOKEN: ${{ secrets.REGISTRY_TOKEN }}
-          USERNAME: ${{ secrets.REGISTRY_USER }}
-        with:
-          host: ${{ secrets.SERVER_HOST }}
-          username: ${{ secrets.SERVER_USER }}
-          key: ${{ secrets.SERVER_SSH_KEY }}
-          envs: APPTOKEN,USERNAME
-          script: |
-            echo $APPTOKEN | docker login ghcr.io -u $USERNAME --password-stdin
-            cd ~/bloksh/
-            docker-compose -f ./docker-compose.prod.yml pull
-            docker-compose -f ./docker-compose.prod.yml up --build -d
+#       - name: Run remote docker-compose via ssh
+#         uses: appleboy/ssh-action@v1
+#         env:
+#           APPTOKEN: ${{ secrets.REGISTRY_TOKEN }}
+#           USERNAME: ${{ secrets.REGISTRY_USER }}
+#         with:
+#           host: ${{ secrets.SERVER_HOST }}
+#           username: ${{ secrets.SERVER_USER }}
+#           key: ${{ secrets.SERVER_SSH_KEY }}
+#           envs: APPTOKEN,USERNAME
+#           script: |
+#             echo $APPTOKEN | docker login ghcr.io -u $USERNAME --password-stdin
+#             cd ~/bloksh/
+#             docker-compose -f ./docker-compose.prod.yml pull
+#             docker-compose -f ./docker-compose.prod.yml up --build -d
