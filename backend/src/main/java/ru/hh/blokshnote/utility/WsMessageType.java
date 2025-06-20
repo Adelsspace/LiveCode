@@ -13,4 +13,5 @@ public enum WsMessageType {
   OPEN_ROOM,
   NEW_EDITOR_STATE_SEND_ALL,
   TEXT_UPDATE_SEND_ALL,
+  LLM_STATUS
 }
