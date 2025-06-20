@@ -21,7 +21,7 @@ export const UsersList = () => {
             <li
               key={username}
               className={styles.userItem}
-              style={{ backgroundColor: color }}
+              style={{ backgroundColor: `#${color}` }}
             >
               {isAdmin && <span className={styles.adminStar}>*</span>}
               <span>{username}</span>
