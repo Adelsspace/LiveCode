@@ -4,7 +4,6 @@ import {
   EditorTheme,
   EditorLanguage,
 } from "../../types/shared.types";
-import ThemeToggle from "../../components/ThemeToggle/ThemeToggle";
 import styles from "./EditorControls.module.scss";
 import { socketService } from "../../services/socketService";
 import { useAppDispatch, useAppSelector } from "../../hooks/reduxHooks";
@@ -77,7 +76,6 @@ export const EditorControls = ({
         defaultValue={editorFontSize}
         onSelect={onFontSizeChange}
       />
-      <ThemeToggle />
 
       {isAdmin && (
         <Button

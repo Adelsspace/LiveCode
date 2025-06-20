@@ -13,6 +13,7 @@ import styles from "./CodeEditor.module.scss";
 import { useAppSelector } from "../../hooks/reduxHooks";
 import { Chat } from "../Chat/Chat";
 import AddUserButton from "../AddUserButton/AddUserButton";
+import ThemeToggle from "../ThemeToggle/ThemeToggle";
 
 interface CodeEditorProps {
   isAdmin: boolean;
@@ -70,10 +71,13 @@ export const CodeEditor = ({ isAdmin }: CodeEditorProps) => {
 
   return (
     <div>
-      <header className={styles.header}>
-        <Logo />
-        <UsersList />
-        {isAdmin && <AddUserButton />}
+      <header className={styles.header_container}>
+        <div className={styles.header}>
+          <Logo />
+          <UsersList />
+          {isAdmin && <AddUserButton />}
+        </div>
+        <ThemeToggle />
       </header>
 
       <div
