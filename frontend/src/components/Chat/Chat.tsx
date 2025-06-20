@@ -11,6 +11,7 @@ import { GptModal } from "../GptModal/GptModal";
 import { Button } from "../Button/Button";
 import { useDispatch } from "react-redux";
 import { setCommentsUpdated } from "../../store/slices/roomSlice";
+import { SendIcon } from "../icons";
 
 export const Chat: React.FC = () => {
   const [message, setMessage] = useState<string>("");
@@ -127,7 +128,7 @@ export const Chat: React.FC = () => {
         />
         <Button
           type="submit"
-          label={">"}
+          icon={<SendIcon />}
           disabled={isFetching || !message.trim()}
           className={styles.submitButton}
         />
