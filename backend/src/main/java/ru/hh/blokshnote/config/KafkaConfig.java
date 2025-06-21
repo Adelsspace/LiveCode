@@ -7,6 +7,7 @@ import org.springframework.kafka.core.ConsumerFactory;
 
 @Configuration
 public class KafkaConfig {
+  public static final String WEBSOCKET_TOPIC = "websocket-messages";
 
   @Bean
   public PartitionFinder finder(ConsumerFactory<String, String> consumerFactory) {
