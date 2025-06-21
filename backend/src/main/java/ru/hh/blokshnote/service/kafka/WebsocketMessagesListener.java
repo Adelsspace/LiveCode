@@ -10,15 +10,12 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.annotation.TopicPartition;
 import org.springframework.stereotype.Service;
-import ru.hh.blokshnote.config.KafkaConfig;
 import static ru.hh.blokshnote.config.KafkaConfig.WEBSOCKET_TOPIC;
 import ru.hh.blokshnote.config.WebSocketConfig;
 import ru.hh.blokshnote.dto.kafka.KafkaRoomEvent;
 import ru.hh.blokshnote.dto.websocket.UserStateDto;
-import ru.hh.blokshnote.handler.RoomSocketHandler;
 import static ru.hh.blokshnote.handler.RoomSocketHandler.USER_STATE_KEY;
 import ru.hh.blokshnote.utility.WsMessageType;
-import static ru.hh.blokshnote.utility.WsMessageType.CLOSE_ROOM;
 import static ru.hh.blokshnote.utility.WsMessageType.NEW_COMMENT;
 
 @Service

@@ -1,10 +1,12 @@
 package ru.hh.blokshnote.handler;
 
 import com.corundumstudio.socketio.AckRequest;
-import com.corundumstudio.socketio.ClientOperations;
 import com.corundumstudio.socketio.SocketIOClient;
 import com.corundumstudio.socketio.SocketIONamespace;
 import com.corundumstudio.socketio.SocketIOServer;
+import java.util.List;
+import java.util.UUID;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -29,11 +31,6 @@ import ru.hh.blokshnote.entity.Room;
 import ru.hh.blokshnote.entity.User;
 import ru.hh.blokshnote.mapper.UserStateMapper;
 import ru.hh.blokshnote.service.RoomService;
-
-import java.util.List;
-import java.util.UUID;
-import java.util.stream.Collectors;
-
 import ru.hh.blokshnote.service.kafka.WebsocketMessagesProducer;
 import static ru.hh.blokshnote.utility.WsMessageType.CLOSE_ROOM;
 import static ru.hh.blokshnote.utility.WsMessageType.CURSOR_POSITION;
