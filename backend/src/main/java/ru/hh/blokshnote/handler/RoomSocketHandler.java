@@ -184,13 +184,17 @@ public class RoomSocketHandler {
 
   private void languageChangeEventHandler(SocketIOClient client, LanguageChangeDto data, AckRequest ackSender) {
     String roomUuid = client.getHandshakeData().getSingleUrlParam(ROOM_UUID.getLabel());
-    roomService.updateRoomEditorLanguage(UUID.fromString(roomUuid), data.getLanguage());
+    Room room = roomService.updateRoomEditorLanguage(UUID.fromString(roomUuid), data.getLanguage());
     LOGGER.info("In room with UUID={} user={} changed language to {}", roomUuid, data.getUsername(), data.getLanguage());
     SocketIONamespace namespace = client.getNamespace();
-    namespace.getRoomOperations(roomUuid).getClients()
-        .stream()
-        .filter(roomClient -> !roomClient.equals(client))
-        .forEach(roomClient -> roomClient.sendEvent(LANGUAGE_CHANGE.name(), data));
+    if (!room.isModifiedByWritingCode()) {
+      changeTemplateInRoom(roomUuid, namespace, data.getLanguage());
+    } else {
+      namespace.getRoomOperations(roomUuid).getClients()
+          .stream()
+          .filter(roomClient -> !roomClient.equals(client))
+          .forEach(roomClient -> roomClient.sendEvent(LANGUAGE_CHANGE.name(), data));
+    }
   }
 
   private void textUpdateEventHandler(SocketIOClient client, TextUpdateDto data, AckRequest ackSender) {
@@ -291,5 +295,13 @@ public class RoomSocketHandler {
     LOGGER.info("In room with UUID={} user={} updated text", roomUuid, data.getUsername());
     SocketIONamespace namespace = client.getNamespace();
     namespace.getRoomOperations(roomUuid).sendEvent(TEXT_UPDATE_SEND_ALL.name(), data);
+  }
+
+  private void changeTemplateInRoom(String roomUuid, SocketIONamespace namespace, String alias) {
+    Room roomTemplate = roomService.changeRoomTemplate(UUID.fromString(roomUuid), alias);
+    EditorStateDto dto = new EditorStateDto();
+    dto.setText(roomTemplate.getEditorText());
+    dto.setLanguage(roomTemplate.getEditorLanguage());
+    namespace.getRoomOperations(roomUuid).sendEvent(NEW_EDITOR_STATE.name(), dto);
   }
 }

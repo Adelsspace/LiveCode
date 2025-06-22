@@ -6,7 +6,6 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
-
 import java.time.Instant;
 import java.util.UUID;
 
@@ -41,6 +40,9 @@ public class Room {
 
   @Column(name = "is_closed")
   private boolean isClosed;
+
+  @Column(name = "is_modified_by_code")
+  private boolean isModifiedByWritingCode = false;
 
   public Long getId() {
     return id;
@@ -108,5 +110,13 @@ public class Room {
 
   public void setClosed(boolean closed) {
     isClosed = closed;
+  }
+
+  public boolean isModifiedByWritingCode() {
+    return isModifiedByWritingCode;
+  }
+
+  public void setModifiedByWritingCode(boolean modifiedByWritingCode) {
+    isModifiedByWritingCode = modifiedByWritingCode;
   }
 }

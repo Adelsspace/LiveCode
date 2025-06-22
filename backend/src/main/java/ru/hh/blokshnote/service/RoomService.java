@@ -16,6 +16,7 @@ import ru.hh.blokshnote.entity.Room;
 import ru.hh.blokshnote.entity.User;
 import ru.hh.blokshnote.repository.RoomRepository;
 import ru.hh.blokshnote.repository.UserRepository;
+import ru.hh.blokshnote.utility.LanguagesInRoom;
 import ru.hh.blokshnote.utility.colors.UserColorUtil;
 import ru.hh.blokshnote.utility.security.RoomSecurityUtils;
 
@@ -32,8 +33,8 @@ public class RoomService {
   private static final Logger LOGGER = LoggerFactory.getLogger(RoomService.class);
 
   private static final Duration ROOM_TIME_TO_LIVE = Duration.ofHours(3);
-  private static final String INITIAL_EDITOR_TEXT = "//Начните писать код";
   private static final String INITIAL_EDITOR_LANGUAGE = "javascript";
+  private static final String INITIAL_EDITOR_TEXT = LanguagesInRoom.getTemplateByAlias(INITIAL_EDITOR_LANGUAGE);
   @Value("${socketio.host-frontend}")
   private String serverHost;
 
@@ -158,7 +159,7 @@ public class RoomService {
   }
 
   @Transactional
-  public void updateRoomEditorLanguage(UUID roomUuid, String language) {
+  public Room updateRoomEditorLanguage(UUID roomUuid, String language) {
     Room room = roomRepository.findByRoomUuid(roomUuid)
         .orElseThrow(() -> {
           LOGGER.info("Room with UUID={} not found", roomUuid);
@@ -166,7 +167,7 @@ public class RoomService {
         });
     room.setEditorLanguage(language);
     room.setUpdatedAt(Instant.now());
-    roomRepository.save(room);
+    return roomRepository.save(room);
   }
 
   @Transactional(readOnly = true)
@@ -209,5 +210,17 @@ public class RoomService {
           return new ResponseStatusException(HttpStatus.NOT_FOUND, String.format("Room with UUID=%s not found", roomUuid));
         });
     return room.isClosed();
+  }
+
+  @Transactional
+  public Room changeRoomTemplate(UUID roomUuid, String alias) {
+    Room room = roomRepository.findByRoomUuid(roomUuid)
+        .orElseThrow(() -> {
+          LOGGER.info("Room with UUID={} not found", roomUuid);
+          return new ResponseStatusException(HttpStatus.NOT_FOUND, String.format("Room with UUID=%s not found", roomUuid));
+        });
+    String template = LanguagesInRoom.getTemplateByAlias(alias);
+    room.setEditorText(template);
+    return roomRepository.save(room);
   }
 }

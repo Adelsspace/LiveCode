@@ -1,0 +1,12 @@
+databaseChangeLog:
+- changeSet:
+    id: 1750525402657-1
+    author: misha (generated)
+    changes:
+    - addColumn:
+        columns:
+        - column:
+            name: is_modified_by_code
+            type: boolean
+        tableName: rooms
+
