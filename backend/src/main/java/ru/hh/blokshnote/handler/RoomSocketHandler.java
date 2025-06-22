@@ -30,7 +30,19 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import static ru.hh.blokshnote.utility.WsMessageType.*;
+import static ru.hh.blokshnote.utility.WsMessageType.CLOSE_ROOM;
+import static ru.hh.blokshnote.utility.WsMessageType.CURSOR_POSITION;
+import static ru.hh.blokshnote.utility.WsMessageType.LANGUAGE_CHANGE;
+import static ru.hh.blokshnote.utility.WsMessageType.LLM_STATUS;
+import static ru.hh.blokshnote.utility.WsMessageType.NEW_COMMENT;
+import static ru.hh.blokshnote.utility.WsMessageType.NEW_EDITOR_STATE;
+import static ru.hh.blokshnote.utility.WsMessageType.NEW_EDITOR_STATE_SEND_ALL;
+import static ru.hh.blokshnote.utility.WsMessageType.OPEN_ROOM;
+import static ru.hh.blokshnote.utility.WsMessageType.TEXT_SELECTION;
+import static ru.hh.blokshnote.utility.WsMessageType.TEXT_UPDATE;
+import static ru.hh.blokshnote.utility.WsMessageType.TEXT_UPDATE_SEND_ALL;
+import static ru.hh.blokshnote.utility.WsMessageType.USERS_UPDATE;
+import static ru.hh.blokshnote.utility.WsMessageType.USER_ACTIVITY;
 import static ru.hh.blokshnote.utility.WsPathParam.ROOM_UUID;
 import static ru.hh.blokshnote.utility.WsPathParam.USER;
 
@@ -254,7 +266,7 @@ public class RoomSocketHandler {
         .forEach(client -> client.sendEvent(NEW_COMMENT.name()));
   }
 
-  // Нарушается DRY, но мне кажется, что пока рано делать обобщение, так как идентичный код пока только в двух методах
+
   public void broadcastLLMStatusToAdmins(UUID uuidOfRoom, boolean status) {
     SocketIONamespace namespace = socketIOServer.getNamespace(WebSocketConfig.ROOM_URI_TEMPLATE);
     if (namespace == null) {
