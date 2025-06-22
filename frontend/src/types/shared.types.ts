@@ -3,7 +3,15 @@ export type EditorLanguage =
   | "typescript"
   | "python"
   | "java"
-  | "plaintext";
+  | "plaintext"
+  | "go"
+  | "cpp"
+  | "csharp"
+  | "kotlin"
+  | "sql"
+  | "ruby"
+  | "php"
+  | "markdown";
 export type EditorTheme = "vs-dark" | "light" | "hc-black";
 export type EditorFontSize = 12 | 14 | 16 | 18 | 20 | 22 | 24;
 

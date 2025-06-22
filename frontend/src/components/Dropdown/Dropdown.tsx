@@ -1,26 +1,34 @@
 import { useEffect, useRef, useState } from "react";
 import styles from "./Dropdown.module.scss";
 
-interface DropdownProps<T> {
-  options: T[];
-  defaultValue?: T;
-  onSelect: (option: T) => void;
+interface DropdownOption<T> {
+  label: string;
+  value: T;
 }
 
-export const Dropdown = <T extends string | number>({
+interface DropdownProps<T> {
+  options: readonly DropdownOption<T>[];
+  defaultValue?: T;
+  onSelect: (value: T) => void;
+}
+
+export const Dropdown = <T,>({
   options,
   defaultValue,
   onSelect,
 }: DropdownProps<T>) => {
-  const [isOpen, setIsOpen] = useState<boolean>(false);
-  const [selectedOption, setSelectedOption] = useState<T | undefined>(
+  const [isOpen, setIsOpen] = useState(false);
+  const [selectedValue, setSelectedValue] = useState<T | undefined>(
     defaultValue
   );
-  useEffect(() => {
-    setSelectedOption(defaultValue);
-  }, [defaultValue]);
-
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const selectedOption =
+    options.find((option) => option.value === selectedValue) || options[0];
+
+  useEffect(() => {
+    setSelectedValue(defaultValue);
+  }, [defaultValue]);
 
   const handleClickOutside = (event: MouseEvent) => {
     const target = event.target as Node;
@@ -28,6 +36,7 @@ export const Dropdown = <T extends string | number>({
       setIsOpen(false);
     }
   };
+
   useEffect(() => {
     document.addEventListener("mousedown", handleClickOutside);
     return () => {
@@ -35,10 +44,10 @@ export const Dropdown = <T extends string | number>({
     };
   }, []);
 
-  const handleSelect = (option: T) => {
-    setSelectedOption(option);
+  const handleSelect = (value: T) => {
+    setSelectedValue(value);
     setIsOpen(false);
-    onSelect(option);
+    onSelect(value);
   };
 
   return (
@@ -47,8 +56,7 @@ export const Dropdown = <T extends string | number>({
         className={`${styles.dropdownToggle} ${isOpen ? styles.open : ""}`}
         onClick={() => setIsOpen(!isOpen)}
       >
-        {selectedOption}
-
+        {selectedOption.label}
         <svg
           className={styles.arrow}
           viewBox="0 0 16 16"
@@ -68,12 +76,12 @@ export const Dropdown = <T extends string | number>({
         <ul className={styles.dropdownMenu}>
           {options.map((option) => (
             <li
-              key={option}
+              key={option.label}
               className={styles.dropdownItem}
-              onClick={() => handleSelect(option)}
+              onClick={() => handleSelect(option.value)}
             >
-              {option}
-              {option === selectedOption && (
+              {option.label}
+              {option.value === selectedValue && (
                 <span className={styles.checkmark}>✓</span>
               )}
             </li>
