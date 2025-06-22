@@ -5,17 +5,22 @@ import com.corundumstudio.socketio.ClientOperations;
 import com.corundumstudio.socketio.SocketIOClient;
 import com.corundumstudio.socketio.SocketIONamespace;
 import com.corundumstudio.socketio.SocketIOServer;
+import java.util.List;
+import java.util.UUID;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 import ru.hh.blokshnote.config.WebSocketConfig;
+import ru.hh.blokshnote.dto.websocket.ChangeDto;
 import ru.hh.blokshnote.dto.websocket.ClosingRoomDto;
 import ru.hh.blokshnote.dto.websocket.CursorPositionDto;
 import ru.hh.blokshnote.dto.websocket.EditorStateDto;
 import ru.hh.blokshnote.dto.websocket.LanguageChangeDto;
 import ru.hh.blokshnote.dto.websocket.OpeningRoomDto;
+import ru.hh.blokshnote.dto.websocket.RangeDto;
 import ru.hh.blokshnote.dto.websocket.TextSelectionDto;
 import ru.hh.blokshnote.dto.websocket.TextUpdateDto;
 import ru.hh.blokshnote.dto.websocket.UserActivityDto;
@@ -24,11 +29,7 @@ import ru.hh.blokshnote.dto.websocket.UsersUpdateDto;
 import ru.hh.blokshnote.entity.Room;
 import ru.hh.blokshnote.entity.User;
 import ru.hh.blokshnote.service.RoomService;
-
-import java.util.List;
-import java.util.UUID;
-import java.util.stream.Collectors;
-
+import ru.hh.blokshnote.utility.LanguagesInRoom;
 import static ru.hh.blokshnote.utility.WsMessageType.CLOSE_ROOM;
 import static ru.hh.blokshnote.utility.WsMessageType.CURSOR_POSITION;
 import static ru.hh.blokshnote.utility.WsMessageType.LANGUAGE_CHANGE;
@@ -184,17 +185,21 @@ public class RoomSocketHandler {
 
   private void languageChangeEventHandler(SocketIOClient client, LanguageChangeDto data, AckRequest ackSender) {
     String roomUuid = client.getHandshakeData().getSingleUrlParam(ROOM_UUID.getLabel());
-    Room room = roomService.updateRoomEditorLanguage(UUID.fromString(roomUuid), data.getLanguage());
+    UUID uuidOfRoom = UUID.fromString(roomUuid);
+    Room room = roomService.updateRoomEditorLanguage(uuidOfRoom, data.getLanguage());
     LOGGER.info("In room with UUID={} user={} changed language to {}", roomUuid, data.getUsername(), data.getLanguage());
     SocketIONamespace namespace = client.getNamespace();
     if (!room.isModifiedByWritingCode()) {
-      changeTemplateInRoom(roomUuid, namespace, data.getLanguage());
-    } else {
-      namespace.getRoomOperations(roomUuid).getClients()
-          .stream()
-          .filter(roomClient -> !roomClient.equals(client))
-          .forEach(roomClient -> roomClient.sendEvent(LANGUAGE_CHANGE.name(), data));
+      if (!LanguagesInRoom.isInTemplatesSet(room.getEditorText())) {
+        roomService.changeRoomIsModifiedToTrue(uuidOfRoom);
+      } else {
+        changeTemplateInRoom(roomUuid, namespace, data.getLanguage(), data.getUsername());
+      }
     }
+    namespace.getRoomOperations(roomUuid).getClients()
+        .stream()
+        .filter(roomClient -> !roomClient.equals(client))
+        .forEach(roomClient -> roomClient.sendEvent(LANGUAGE_CHANGE.name(), data));
   }
 
   private void textUpdateEventHandler(SocketIOClient client, TextUpdateDto data, AckRequest ackSender) {
@@ -297,11 +302,19 @@ public class RoomSocketHandler {
     namespace.getRoomOperations(roomUuid).sendEvent(TEXT_UPDATE_SEND_ALL.name(), data);
   }
 
-  private void changeTemplateInRoom(String roomUuid, SocketIONamespace namespace, String alias) {
+  private void changeTemplateInRoom(String roomUuid, SocketIONamespace namespace, String alias, String username) {
     Room roomTemplate = roomService.changeRoomTemplate(UUID.fromString(roomUuid), alias);
-    EditorStateDto dto = new EditorStateDto();
-    dto.setText(roomTemplate.getEditorText());
-    dto.setLanguage(roomTemplate.getEditorLanguage());
-    namespace.getRoomOperations(roomUuid).sendEvent(NEW_EDITOR_STATE.name(), dto);
+    LOGGER.info("Broadcast room with language {} adn text {}", roomTemplate.getEditorLanguage(), roomTemplate.getEditorText());
+    TextUpdateDto textUpdateDto = new TextUpdateDto();
+    textUpdateDto.setUsername(username);
+
+    ChangeDto change = new ChangeDto();
+    change.setRange(new RangeDto(1, 1, 100, 100));
+    change.setText(roomTemplate.getEditorText());
+    change.setVersion(1);
+
+    textUpdateDto.setChanges(List.of(change));
+    namespace.getRoomOperations(roomUuid).sendEvent(TEXT_UPDATE.name(), textUpdateDto);
+    LOGGER.info("Broadcast room with language {} and text {}", roomTemplate.getEditorLanguage(), roomTemplate.getEditorText());
   }
 }

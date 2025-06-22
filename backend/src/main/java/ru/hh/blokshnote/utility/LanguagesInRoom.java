@@ -1,7 +1,9 @@
 package ru.hh.blokshnote.utility;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 public enum LanguagesInRoom {
   JAVA("java", """
@@ -47,15 +49,20 @@ public enum LanguagesInRoom {
   }
 
   private static final Map<String, LanguagesInRoom> ALIAS_MAP = new HashMap<>();
+  private static final Set<String> TEMPLATES_SET = new HashSet<>();
 
   static {
     for (LanguagesInRoom lang : values()) {
       ALIAS_MAP.put(lang.alias, lang);
+      TEMPLATES_SET.add(lang.template);
     }
   }
 
   public static String getTemplateByAlias(String alias) {
     return ALIAS_MAP.getOrDefault(alias, PLAIN).getTemplate();
   }
-}
 
+  public static boolean isInTemplatesSet(String text) {
+    return TEMPLATES_SET.contains(text);
+  }
+}

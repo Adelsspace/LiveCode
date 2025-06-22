@@ -214,6 +214,7 @@ public class RoomService {
 
   @Transactional
   public Room changeRoomTemplate(UUID roomUuid, String alias) {
+    LOGGER.info("Getting template for {}", alias);
     Room room = roomRepository.findByRoomUuid(roomUuid)
         .orElseThrow(() -> {
           LOGGER.info("Room with UUID={} not found", roomUuid);
