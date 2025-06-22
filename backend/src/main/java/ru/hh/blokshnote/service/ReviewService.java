@@ -10,8 +10,10 @@ import ru.hh.blokshnote.utility.security.RoomSecurityUtils;
 
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 @Service
@@ -41,24 +43,26 @@ public class ReviewService {
     String editorText = room.getEditorText();
     String prompt = request.prompt().strip();
 
+    roomSocketHandler.broadcastLLMStatusToAdmins(roomUuid, false);
     CompletableFuture<String> reviewFuture = llmService.getReviewResponseAsync(editorText, prompt);
+    try (ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor()) {
 
-    waitFutureAndSendLlmStatus(reviewFuture, roomUuid);
-
-    return reviewFuture.thenApply(content -> commentService.createReviewComment(room, content));
-  }
-
-  private void waitFutureAndSendLlmStatus(CompletableFuture<String> reviewFuture, UUID roomUuid) {
-    try (ScheduledExecutorService ex = Executors.newSingleThreadScheduledExecutor()) {
-
-      ex.scheduleAtFixedRate(() -> {
+      ScheduledFuture<?> statusFuture = executor.scheduleAtFixedRate(() -> {
         roomSocketHandler.broadcastLLMStatusToAdmins(roomUuid, false);
-      }, 0, 1, TimeUnit.SECONDS);
+      }, 1, 1, TimeUnit.SECONDS);
 
-      reviewFuture.join();
-      //ex.shutdownNow();
-      CompletableFuture.runAsync(() -> roomSocketHandler.broadcastLLMStatusToAdmins(roomUuid, true));
+      return reviewFuture.handleAsync((content, throwable) -> {
+          statusFuture.cancel(true);
+          executor.shutdown();
+
+          roomSocketHandler.broadcastLLMStatusToAdmins(roomUuid, true);
+
+          if (throwable != null) {
+            throw new CompletionException(throwable);
+          }
+
+          return commentService.createReviewComment(room, content);
+      });
     }
   }
-
 }
