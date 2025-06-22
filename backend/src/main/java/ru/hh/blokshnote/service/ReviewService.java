@@ -45,14 +45,14 @@ public class ReviewService {
 
     roomSocketHandler.broadcastLLMStatusToAdmins(roomUuid, false);
     CompletableFuture<String> reviewFuture = llmService.getReviewResponseAsync(editorText, prompt);
-    try (ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor()) {
+    ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
 
-      ScheduledFuture<?> statusFuture = executor.scheduleAtFixedRate(() -> {
+    ScheduledFuture<?> statusFuture = executor.scheduleAtFixedRate(() -> {
         roomSocketHandler.broadcastLLMStatusToAdmins(roomUuid, false);
-      }, 1, 1, TimeUnit.SECONDS);
+        }, 1, 1, TimeUnit.SECONDS);
 
-      return reviewFuture.handleAsync((content, throwable) -> {
-          statusFuture.cancel(true);
+      return reviewFuture.handle((content, throwable) -> {
+          statusFuture.cancel(false);
           executor.shutdown();
 
           roomSocketHandler.broadcastLLMStatusToAdmins(roomUuid, true);
@@ -62,7 +62,11 @@ public class ReviewService {
           }
 
           return commentService.createReviewComment(room, content);
+      }).whenComplete((result, ex) -> {
+        if (ex != null) {
+          executor.shutdown();
+        }
       });
-    }
+
   }
 }
