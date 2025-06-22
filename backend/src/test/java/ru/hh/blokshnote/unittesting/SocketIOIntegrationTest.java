@@ -2,6 +2,16 @@ package ru.hh.blokshnote.unittesting;
 
 import io.socket.client.IO;
 import io.socket.client.Socket;
+import java.io.IOException;
+import java.net.ServerSocket;
+import java.net.URISyntaxException;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 import org.assertj.core.api.Assertions;
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -14,18 +24,6 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import ru.hh.blokshnote.entity.Room;
 import ru.hh.blokshnote.entity.User;
 import ru.hh.blokshnote.service.RoomService;
-
-import java.io.IOException;
-import java.net.ServerSocket;
-import java.net.URISyntaxException;
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-
 import static ru.hh.blokshnote.utility.WsMessageType.CLOSE_ROOM;
 import static ru.hh.blokshnote.utility.WsMessageType.CURSOR_POSITION;
 import static ru.hh.blokshnote.utility.WsMessageType.LANGUAGE_CHANGE;
@@ -198,19 +196,24 @@ public class SocketIOIntegrationTest extends NoKafkaAbstractIntegrationTest {
   }
 
   @Test
-  public void languageChangeTest() throws URISyntaxException, JSONException, ExecutionException, InterruptedException {
+  public void languageChangeTestModifiedRoom() throws URISyntaxException, JSONException, ExecutionException, InterruptedException {
     UUID roomUuid = UUID.randomUUID();
     Socket sender = initClient(roomUuid, senderName);
     Socket receiver = initClient(roomUuid, receiverName);
     clientsConnect(roomUuid, sender, receiver);
 
+    Room room = new Room();
+    room.setModifiedByWritingCode(true);
+
     CompletableFuture<JSONObject> languageChangeFuture = new CompletableFuture<>();
     receiver.on(LANGUAGE_CHANGE.name(), args -> languageChangeFuture.complete((JSONObject) args[0]));
 
-    String language = "Java";
+    String language = "java";
     JSONObject languageChange = new JSONObject();
     languageChange.put("language", language);
     languageChange.put("username", senderName);
+
+    Mockito.when(roomService.updateRoomEditorLanguage(roomUuid, language)).thenReturn(room);
 
     sender.emit(LANGUAGE_CHANGE.name(), languageChange);
 
