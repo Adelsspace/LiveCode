@@ -70,7 +70,7 @@ export const CodeEditor = ({ isAdmin }: CodeEditorProps) => {
   };
 
   return (
-    <div>
+    <div className={styles.appContainer}>
       <header className={styles.header_container}>
         <div className={styles.header}>
           <Logo />
@@ -80,50 +80,53 @@ export const CodeEditor = ({ isAdmin }: CodeEditorProps) => {
         <ThemeToggle />
       </header>
 
-      <div
-        className={styles.container}
-        ref={containerRef}
-        style={{
-          gridTemplateColumns:
-            isAdmin && isChatVisible
-              ? `${editorWidth}% 5px ${100 - editorWidth}%`
-              : "100%",
-        }}
-      >
-        <div className={styles.editor}>
-          <MonacoEditor
-            initialCode={text}
-            editorLanguage={language}
-            editorTheme={editorTheme}
-            editorFontSize={editorFontSize}
-          />
-        </div>
+      <main className={styles.mainContent}>
+        <div
+          className={styles.container}
+          ref={containerRef}
+          style={{
+            gridTemplateColumns:
+              isAdmin && isChatVisible
+                ? `${editorWidth}% 5px ${100 - editorWidth}%`
+                : "100%",
+          }}
+        >
+          <div className={styles.editor}>
+            <MonacoEditor
+              initialCode={text}
+              editorLanguage={language}
+              editorTheme={editorTheme}
+              editorFontSize={editorFontSize}
+            />
+          </div>
 
-        {isAdmin && isChatVisible && (
-          <>
-            <div className={styles.separator} onMouseDown={handleMouseDown}>
-              <div className={styles.dots}>
-                <div className={styles.dot}></div>
-                <div className={styles.dot}></div>
-                <div className={styles.dot}></div>
+          {isAdmin && isChatVisible && (
+            <>
+              <div className={styles.separator} onMouseDown={handleMouseDown}>
+                <div className={styles.dots}>
+                  <div className={styles.dot}></div>
+                  <div className={styles.dot}></div>
+                  <div className={styles.dot}></div>
+                </div>
               </div>
-            </div>
-            <div className={styles.chat}>
-              <Chat />
-            </div>
-          </>
-        )}
-      </div>
-
-      <EditorControls
-        editorTheme={editorTheme}
-        editorFontSize={editorFontSize}
-        onThemeChange={handleThemeChange}
-        onFontSizeChange={handleFontSizeChange}
-        isAdmin={isAdmin}
-        isChatVisible={isChatVisible}
-        toggleChatVisibility={() => setIsChatVisible((prev) => !prev)}
-      />
+              <div className={styles.chat}>
+                <Chat />
+              </div>
+            </>
+          )}
+        </div>
+      </main>
+      <footer className={styles.footer}>
+        <EditorControls
+          editorTheme={editorTheme}
+          editorFontSize={editorFontSize}
+          onThemeChange={handleThemeChange}
+          onFontSizeChange={handleFontSizeChange}
+          isAdmin={isAdmin}
+          isChatVisible={isChatVisible}
+          toggleChatVisibility={() => setIsChatVisible((prev) => !prev)}
+        />
+      </footer>
     </div>
   );
 };
