@@ -1,5 +1,11 @@
 @use "../../styles/variables" as *;
 
+.container {
+  padding: 0 40px 40px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
 .main_container {
   display: flex;
   flex-direction: column;
@@ -17,7 +23,7 @@
 .title {
   color: var(--text);
   font-size: $font-size-lg;
-  padding: 40px 0px;
+  padding: 10px 0px;
   background: linear-gradient(to right, var(--text), var(--accent));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -33,4 +39,25 @@
     background: var(--hover);
     color: var(--text);
   }
+}
+
+.advantages {
+  margin-top: 130px;
+  text-align: left;
+  max-width: 610px;
+  background-color: var(--secondary);
+  padding: 10px;
+  border-radius: 10px;
+  gap: 5px;
+  ul {
+    list-style-type: disc;
+    padding-left: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+}
+
+.dash {
+  font-weight: 900;
 }
