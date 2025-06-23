@@ -1,0 +1,12 @@
+databaseChangeLog:
+- changeSet:
+    id: 1749997313162-1
+    author: aleksey (generated)
+    changes:
+    - addColumn:
+        columns:
+        - column:
+            name: updated_at
+            type: timestamp(6)
+        tableName: rooms
+
