@@ -4,7 +4,6 @@ import {
   EditorTheme,
   EditorLanguage,
 } from "../../types/shared.types";
-import ThemeToggle from "../../components/ThemeToggle/ThemeToggle";
 import styles from "./EditorControls.module.scss";
 import { socketService } from "../../services/socketService";
 import { useAppDispatch, useAppSelector } from "../../hooks/reduxHooks";
@@ -20,16 +19,33 @@ interface EditorControlsProps {
   toggleChatVisibility: () => void;
 }
 
-const editorLanguages: EditorLanguage[] = [
-  "javascript",
-  "typescript",
-  "python",
-  "java",
-];
+const languageOptions = [
+  { label: "JavaScript", value: "javascript" },
+  { label: "TypeScript", value: "typescript" },
+  { label: "Python", value: "python" },
+  { label: "Java", value: "java" },
+  { label: "Kotlin", value: "kotlin" },
+  { label: "Go", value: "go" },
+  { label: "C++", value: "cpp" },
+  { label: "C#", value: "csharp" },
+  { label: "SQL", value: "sql" },
+  { label: "Ruby", value: "ruby" },
+  { label: "PHP", value: "php" },
+  { label: "Plain Text", value: "plaintext" },
+  { label: "Markdown", value: "markdown" },
+] as const;
 
 const editorThemes: EditorTheme[] = ["vs-dark", "light", "hc-black"];
 const editorFontSizes: EditorFontSize[] = [12, 14, 16, 18, 20, 22, 24];
+const themeOptions = editorThemes.map((theme) => ({
+  label: theme,
+  value: theme,
+}));
 
+const fontSizeOptions = editorFontSizes.map((size) => ({
+  label: `${size}px`,
+  value: size,
+}));
 export const EditorControls = ({
   editorTheme,
   editorFontSize,
@@ -62,21 +78,20 @@ export const EditorControls = ({
   return (
     <div className={styles.controls}>
       <Dropdown
-        options={editorLanguages}
+        options={languageOptions}
         defaultValue={editorLanguage || defaultLanguage || "javascript"}
         onSelect={handleLanguageChange}
       />
       <Dropdown
-        options={editorThemes}
+        options={themeOptions}
         defaultValue={editorTheme}
         onSelect={onThemeChange}
       />
       <Dropdown
-        options={editorFontSizes}
+        options={fontSizeOptions}
         defaultValue={editorFontSize}
         onSelect={onFontSizeChange}
       />
-      <ThemeToggle />
 
       {isAdmin && (
         <Button

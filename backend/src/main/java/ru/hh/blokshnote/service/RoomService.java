@@ -65,6 +65,7 @@ public class RoomService {
     room.setAdminToken(UUID.randomUUID());
     room.setCreatedAt(now);
     room.setExpiredAt(now.plus(ROOM_TIME_TO_LIVE));
+    room.setUpdatedAt(now);
     room.setEditorText(INITIAL_EDITOR_TEXT);
     room.setEditorLanguage(INITIAL_EDITOR_LANGUAGE);
     room.setClosed(false);
@@ -152,6 +153,7 @@ public class RoomService {
     diffService.makeDiff(room, messageDto.getText());
     room.setEditorText(messageDto.getText());
     room.setEditorLanguage(messageDto.getLanguage());
+    room.setUpdatedAt(Instant.now());
     return roomRepository.save(room);
   }
 
@@ -163,6 +165,7 @@ public class RoomService {
           return new ResponseStatusException(HttpStatus.NOT_FOUND, String.format("Room with UUID=%s not found", roomUuid));
         });
     room.setEditorLanguage(language);
+    room.setUpdatedAt(Instant.now());
     roomRepository.save(room);
   }
 
@@ -194,6 +197,7 @@ public class RoomService {
           return new ResponseStatusException(HttpStatus.NOT_FOUND, String.format("Room with UUID=%s not found", roomUuid));
         });
     room.setClosed(isClosed);
+    room.setUpdatedAt(Instant.now());
     roomRepository.save(room);
   }
 
