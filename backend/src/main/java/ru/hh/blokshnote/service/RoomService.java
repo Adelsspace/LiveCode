@@ -77,6 +77,7 @@ public class RoomService {
     adminUser.setAdmin(true);
     adminUser.setRoom(room);
     adminUser.setColor(UserColorUtil.generateUserColor(request.getUsername(), Set.of()));
+    adminUser.setLastPingTime(Instant.now());
     userRepository.save(adminUser);
 
     return room;
@@ -102,6 +103,7 @@ public class RoomService {
     user.setAdmin(false);
     user.setRoom(room);
     user.setColor(color);
+    user.setLastPingTime(Instant.now());
     return userRepository.save(user);
   }
 
@@ -122,6 +124,7 @@ public class RoomService {
     user.setAdmin(true);
     user.setRoom(room);
     user.setColor(color);
+    user.setLastPingTime(Instant.now());
     return userRepository.save(user);
   }
 

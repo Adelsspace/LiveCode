@@ -5,9 +5,6 @@ import com.corundumstudio.socketio.ClientOperations;
 import com.corundumstudio.socketio.SocketIOClient;
 import com.corundumstudio.socketio.SocketIONamespace;
 import com.corundumstudio.socketio.SocketIOServer;
-import java.util.List;
-import java.util.UUID;
-import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -25,11 +22,17 @@ import ru.hh.blokshnote.dto.websocket.RangeDto;
 import ru.hh.blokshnote.dto.websocket.TextSelectionDto;
 import ru.hh.blokshnote.dto.websocket.TextUpdateDto;
 import ru.hh.blokshnote.dto.websocket.UserActivityDto;
-import ru.hh.blokshnote.dto.websocket.UserStateDto;
+import ru.hh.blokshnote.dto.websocket.UserState;
 import ru.hh.blokshnote.dto.websocket.UsersUpdateDto;
 import ru.hh.blokshnote.entity.Room;
 import ru.hh.blokshnote.entity.User;
+import ru.hh.blokshnote.mapper.UserStateMapper;
 import ru.hh.blokshnote.service.RoomService;
+
+import java.util.List;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
 import static ru.hh.blokshnote.utility.WsMessageType.CLOSE_ROOM;
 import static ru.hh.blokshnote.utility.WsMessageType.CURSOR_POSITION;
 import static ru.hh.blokshnote.utility.WsMessageType.LANGUAGE_CHANGE;
@@ -49,11 +52,12 @@ import static ru.hh.blokshnote.utility.WsPathParam.USER;
 @Component
 public class RoomSocketHandler {
 
+  public static final String USER_STATE_KEY = "USER_STATE";
+
   @Value("${socketio.broadcast.debug:false}")
   private boolean isBroadcastEnable;
 
   private static final Logger LOGGER = LoggerFactory.getLogger(RoomSocketHandler.class);
-  private final String USER_STATE_KEY = "USER_STATE";
   private final RoomService roomService;
   private final SocketIOServer socketIOServer;
 
@@ -96,7 +100,7 @@ public class RoomSocketHandler {
       client.disconnect();
       return;
     }
-    client.set(USER_STATE_KEY, new UserStateDto(userName, true, user.isAdmin(), user.getColor()));
+    client.set(USER_STATE_KEY, new UserState(user.getId(), userName, user.isAdmin(), user.getColor()));
     client.joinRoom(roomUuidString);
 
     sendEditorState(client, roomUuid);
@@ -119,17 +123,21 @@ public class RoomSocketHandler {
   }
 
   private void broadcastRoomUsers(SocketIONamespace namespace, String roomUuid) {
-    List<UserStateDto> users = namespace.getRoomOperations(roomUuid).getClients().stream()
-        .map(client -> (UserStateDto) client.get(USER_STATE_KEY))
+    List<UserState> users = namespace.getRoomOperations(roomUuid).getClients().stream()
+        .map(client -> (UserState) client.get(USER_STATE_KEY))
         .toList();
     LOGGER.info(
         "Users={} now in room with UUID={}",
         users.stream()
-            .map(UserStateDto::getUsername)
+            .map(UserState::getUsername)
             .collect(Collectors.toSet()),
         roomUuid
     );
-    namespace.getRoomOperations(roomUuid).sendEvent(USERS_UPDATE.name(), new UsersUpdateDto(users));
+    namespace.getRoomOperations(roomUuid).sendEvent(USERS_UPDATE.name(), new UsersUpdateDto(
+        users.stream()
+            .map(UserStateMapper::toDto)
+            .collect(Collectors.toList()))
+    );
   }
 
   private void editorStateEventHandler(SocketIOClient client, EditorStateDto data, AckRequest ackSender) {
@@ -174,12 +182,6 @@ public class RoomSocketHandler {
 
   private void userActivityEventHandler(SocketIOClient client, UserActivityDto data, AckRequest ackSender) {
     String roomUuid = client.getHandshakeData().getSingleUrlParam(ROOM_UUID.getLabel());
-    UserStateDto userState = client.get(USER_STATE_KEY);
-    if (userState == null) {
-      userState = setUserState(roomUuid, client);
-    }
-    userState.setActive(data.isActive());
-    client.set(USER_STATE_KEY, userState);
     LOGGER.info("In room with UUID={} user={} now {}", roomUuid, data.getUsername(),
         data.isActive() ? "active" : "inactive"
     );
@@ -214,7 +216,7 @@ public class RoomSocketHandler {
 
   private void closeRoomEventHandler(SocketIOClient client, ClosingRoomDto data, AckRequest acSender) {
     String roomUuid = client.getHandshakeData().getSingleUrlParam(ROOM_UUID.getLabel());
-    UserStateDto userState = client.get(USER_STATE_KEY);
+    UserState userState = client.get(USER_STATE_KEY);
     if (userState == null) {
       userState = setUserState(roomUuid, client);
       client.set(USER_STATE_KEY, userState);
@@ -233,7 +235,7 @@ public class RoomSocketHandler {
   private void disconnectNonAdmins(SocketIONamespace namespace) {
     namespace.getAllClients().stream()
         .filter(roomClient -> {
-          UserStateDto userState = roomClient.get(USER_STATE_KEY);
+          UserState userState = roomClient.get(USER_STATE_KEY);
           return (userState == null || !userState.isAdmin());
         })
         .forEach(ClientOperations::disconnect);
@@ -241,7 +243,7 @@ public class RoomSocketHandler {
 
   private void openRoomEventHandler(SocketIOClient client, OpeningRoomDto data, AckRequest ackSender) {
     String roomUuid = client.getHandshakeData().getSingleUrlParam(ROOM_UUID.getLabel());
-    UserStateDto userState = client.get(USER_STATE_KEY);
+    UserState userState = client.get(USER_STATE_KEY);
     if (userState == null) {
       userState = setUserState(roomUuid, client);
       client.set(USER_STATE_KEY, userState);
@@ -267,7 +269,7 @@ public class RoomSocketHandler {
     namespace.getRoomOperations(roomUuid).getClients()
         .stream()
         .filter(client -> {
-          UserStateDto userState = client.get(USER_STATE_KEY);
+          UserState userState = client.get(USER_STATE_KEY);
           return (userState != null && userState.isAdmin());
         })
         .forEach(client -> client.sendEvent(NEW_COMMENT.name()));
@@ -285,19 +287,19 @@ public class RoomSocketHandler {
     namespace.getRoomOperations(roomUuid).getClients()
             .stream()
             .filter(client -> {
-              UserStateDto userState = client.get(USER_STATE_KEY);
+              UserState userState = client.get(USER_STATE_KEY);
               return (userState != null && userState.isAdmin());
             })
             .forEach(client -> client.sendEvent(LLM_STATUS.name(), new LlmStatusDto(status)));
   }
 
-  private UserStateDto setUserState(String roomUuid, SocketIOClient client) {
+  private UserState setUserState(String roomUuid, SocketIOClient client) {
     String userName = client.getHandshakeData().getSingleUrlParam(USER.getLabel());
     User user = roomService.getUser(UUID.fromString(roomUuid), userName);
-    UserStateDto userState = new UserStateDto();
+    UserState userState = new UserState();
+    userState.setId(user.getId());
     userState.setUsername(userName);
     userState.setAdmin(user.isAdmin());
-    userState.setActive(true);
     return userState;
   }
 
