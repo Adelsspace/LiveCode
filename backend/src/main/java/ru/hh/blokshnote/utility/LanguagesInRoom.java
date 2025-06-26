@@ -30,7 +30,57 @@ public enum LanguagesInRoom {
 
         main();
         """),
-  PLAIN("plain", "Начните писать код\n");
+  PLAINTEXT("plaintext", "Начните писать код\n"),
+  KOTLIN("kotlin", """
+      fun main() {
+          // Начните писать код
+      }
+      """),
+  GO("go", """
+      package main
+      
+      import "fmt"
+      
+      func main() {
+          // Начните писать код
+      }
+      """),
+  CPP("cpp", """
+      #include <iostream>
+      
+      int main() {
+          // Начните писать код
+          return 0;
+      }
+      """),
+  CSHARP("csharp", """
+      using System;
+      
+      class Program {
+          static void Main(string[] args) {
+              // Начните писать код
+          }
+      }
+      """),
+  SQL("sql", """
+      -- Начните писать SQL-запрос
+      SELECT * FROM table_name;
+      """),
+  RUBY("ruby", """
+      # Начните писать код
+      puts "Hello, world"
+      """),
+  PHP("php", """
+      <?php
+      // Начните писать код
+      echo "Hello, world";
+      ?>
+      """),
+  MARKDOWN("markdown", """
+      <!-- Начните писать документацию или заметки -->
+      
+      Текст **жирный**, *курсив*, `код`.
+      """);
 
   private final String alias;
   private final String template;
@@ -59,7 +109,7 @@ public enum LanguagesInRoom {
   }
 
   public static String getTemplateByAlias(String alias) {
-    return ALIAS_MAP.getOrDefault(alias, PLAIN).getTemplate();
+    return ALIAS_MAP.getOrDefault(alias, PLAINTEXT).getTemplate();
   }
 
   public static boolean isInTemplatesSet(String text) {
