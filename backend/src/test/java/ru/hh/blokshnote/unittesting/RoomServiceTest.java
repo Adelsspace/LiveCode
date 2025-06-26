@@ -15,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 import ru.hh.blokshnote.dto.room.request.CreateRoomRequest;
 import ru.hh.blokshnote.dto.user.request.CreateUserRequest;
+import ru.hh.blokshnote.dto.websocket.EditorStateDto;
 import ru.hh.blokshnote.entity.Room;
 import ru.hh.blokshnote.entity.User;
 import ru.hh.blokshnote.service.RoomService;
@@ -172,7 +173,7 @@ public class RoomServiceTest extends NoKafkaAbstractIntegrationTest {
   @Test
   void changeRoomTemplateWhenRoomExistsUpdatesEditorText() {
     String alias = "java";
-    Room updated = roomService.changeRoomTemplate(testRoomUuid, alias);
+    Room updated = roomService.updateRoomEditorLanguage(testRoomUuid, alias);
 
     assertNotNull(updated);
     assertEquals(testRoomUuid, updated.getRoomUuid());
@@ -180,37 +181,37 @@ public class RoomServiceTest extends NoKafkaAbstractIntegrationTest {
     assertEquals(expectedTemplate, updated.getEditorText());
   }
 
+
   @Test
   void changeRoomTemplateWhenRoomNotFoundThrowsNotFound() {
     UUID nonExistent = UUID.randomUUID();
     assertThrows(ResponseStatusException.class, () -> {
-      roomService.changeRoomTemplate(nonExistent, "anyAlias");
+      roomService.updateRoomEditorLanguage(nonExistent, "anyAlias");
     }, "Expected ResponseStatusException when changing template of non-existent room");
   }
 
   @Test
-  void changeRoomIsModifiedToTrueWhenRoomExistsSetsModifiedFlag() {
+  void changeRoomLanguageWhenFlagIsFalseNotUsingTemplate() {
     Room before = roomService.getRoomByUuid(testRoomUuid);
     assertFalse(before.isModifiedByWritingCode());
+    String testText = "Not template text";
 
-    roomService.changeRoomIsModifiedToTrue(testRoomUuid);
+    EditorStateDto dto = new EditorStateDto();
+    dto.setLanguage("javascript");
+    dto.setText(testText);
+    roomService.updateRoomEditor(testRoomUuid, dto);
+    roomService.updateRoomEditorLanguage(testRoomUuid, "java");
+
     Room after = roomService.getRoomByUuid(testRoomUuid);
 
     assertTrue(after.isModifiedByWritingCode());
-  }
-
-  @Test
-  void changeRoomIsModifiedToTrueWhenRoomNotFoundThrowsNotFound() {
-    UUID nonExistent = UUID.randomUUID();
-    assertThrows(ResponseStatusException.class, () -> {
-      roomService.changeRoomIsModifiedToTrue(nonExistent);
-    }, "Expected ResponseStatusException when setting modified flag on non-existent room");
+    assertEquals(testText, after.getEditorText());
   }
 
   @Test
   void changeRoomTemplateWhenAliasNotFoundUsesPlainTemplate() {
     String invalidAlias = "nonexistent";
-    Room updated = roomService.changeRoomTemplate(testRoomUuid, invalidAlias);
+    Room updated = roomService.updateRoomEditorLanguage(testRoomUuid, invalidAlias);
 
     assertNotNull(updated);
     assertEquals(testRoomUuid, updated.getRoomUuid());

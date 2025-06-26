@@ -167,6 +167,13 @@ public class RoomService {
         });
     room.setEditorLanguage(language);
     room.setUpdatedAt(Instant.now());
+    if (!room.isModifiedByWritingCode()) {
+      if (!LanguagesInRoom.isInTemplatesSet(room.getEditorText())) {
+        room.setModifiedByWritingCode(true);
+      } else {
+        changeRoomTemplate(room, language);
+      }
+    }
     return roomRepository.save(room);
   }
 
@@ -212,16 +219,10 @@ public class RoomService {
     return room.isClosed();
   }
 
-  @Transactional
-  public Room changeRoomTemplate(UUID roomUuid, String alias) {
+  private void changeRoomTemplate(Room room, String alias) {
     LOGGER.info("Getting template for {}", alias);
-    Room room = roomRepository.findByRoomUuid(roomUuid)
-        .orElseThrow(() -> {
-          LOGGER.info("Room with UUID={} not found", roomUuid);
-          return new ResponseStatusException(HttpStatus.NOT_FOUND, String.format("Room with UUID=%s not found", roomUuid));
-        });
     String template = LanguagesInRoom.getTemplateByAlias(alias);
     room.setEditorText(template);
-    return roomRepository.save(room);
+    roomRepository.save(room);
   }
 }
