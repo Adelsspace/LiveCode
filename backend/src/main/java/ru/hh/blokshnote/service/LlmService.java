@@ -18,7 +18,7 @@ public class LlmService {
   private static final String PLACEHOLDER_RESPONSE = "LLM reviews are disabled since no llm key is provided";
 
   private static final long TIMEOUT_SECONDS = 20L;
-  private static final String TIMEOUT_RESPONSE = "Нейросеть не смогла дать ответ. Таймаут";
+  private static final String TIMEOUT_RESPONSE = "Нейросеть занята, попробуйте еще раз";
 
 
   private static final String PLACEHOLDER_PROMPT = "Analyze the solution to the given problem.";
