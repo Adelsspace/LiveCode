@@ -21,7 +21,7 @@ export const CommentItem: React.FC<CommentItemProps> = ({ comment }) => {
   return (
     <div className={styles.comment}>
       <div className={styles.header}>
-        <span className={styles.author} style={{ color: comment.color }}>
+        <span className={styles.author} style={{ color: `#${comment.color}` }}>
           {comment.author || "Deepseek"}
         </span>
         {comment.isLlm && <span className={styles.llmBadge}>AI Generated</span>}

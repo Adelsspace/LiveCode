@@ -2,19 +2,6 @@ package ru.hh.blokshnote.unittesting;
 
 import io.socket.client.IO;
 import io.socket.client.Socket;
-import org.assertj.core.api.Assertions;
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
-import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import ru.hh.blokshnote.entity.Room;
-import ru.hh.blokshnote.entity.User;
-import ru.hh.blokshnote.service.RoomService;
-
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.URISyntaxException;
@@ -25,7 +12,21 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-
+import org.assertj.core.api.Assertions;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
+import static org.mockito.Mockito.timeout;
+import static org.mockito.Mockito.verify;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import ru.hh.blokshnote.entity.Room;
+import ru.hh.blokshnote.entity.User;
+import ru.hh.blokshnote.service.RoomService;
+import ru.hh.blokshnote.utility.LanguagesInRoom;
 import static ru.hh.blokshnote.utility.WsMessageType.CLOSE_ROOM;
 import static ru.hh.blokshnote.utility.WsMessageType.CURSOR_POSITION;
 import static ru.hh.blokshnote.utility.WsMessageType.LANGUAGE_CHANGE;
@@ -198,19 +199,24 @@ public class SocketIOIntegrationTest extends NoKafkaAbstractIntegrationTest {
   }
 
   @Test
-  public void languageChangeTest() throws URISyntaxException, JSONException, ExecutionException, InterruptedException {
+  public void languageChangeTestModifiedRoom() throws URISyntaxException, JSONException, ExecutionException, InterruptedException {
     UUID roomUuid = UUID.randomUUID();
     Socket sender = initClient(roomUuid, senderName);
     Socket receiver = initClient(roomUuid, receiverName);
     clientsConnect(roomUuid, sender, receiver);
 
+    Room room = new Room();
+    room.setModifiedByWritingCode(true);
+
     CompletableFuture<JSONObject> languageChangeFuture = new CompletableFuture<>();
     receiver.on(LANGUAGE_CHANGE.name(), args -> languageChangeFuture.complete((JSONObject) args[0]));
 
-    String language = "Java";
+    String language = "java";
     JSONObject languageChange = new JSONObject();
     languageChange.put("language", language);
     languageChange.put("username", senderName);
+
+    Mockito.when(roomService.updateRoomEditorLanguage(roomUuid, language)).thenReturn(room);
 
     sender.emit(LANGUAGE_CHANGE.name(), languageChange);
 
@@ -482,6 +488,99 @@ public class SocketIOIntegrationTest extends NoKafkaAbstractIntegrationTest {
     Assertions.assertThat(nonAdminConnect.await(TIMEOUT, TimeUnit.MILLISECONDS)).isFalse();
     Assertions.assertThat(nonAdminClient.connected()).isFalse();
     ensureSocketsClosed(nonAdminClient);
+  }
+
+  @Test
+  public void languageChangeInUnmodifiedRoomShouldBroadcastTemplate() throws Exception {
+    UUID roomUuid = UUID.randomUUID();
+    Socket sender = initClient(roomUuid, senderName);
+    Socket receiver = initClient(roomUuid, receiverName);
+
+    clientsConnect(roomUuid, sender, receiver);
+
+    String pythonTemplate = LanguagesInRoom.PYTHON.getTemplate();
+    Room roomAfterUpdate = new Room();
+    roomAfterUpdate.setRoomUuid(roomUuid);
+    roomAfterUpdate.setEditorLanguage("python");
+    roomAfterUpdate.setEditorText(pythonTemplate);
+    roomAfterUpdate.setModifiedByWritingCode(false);
+
+    Mockito.when(roomService.updateRoomEditorLanguage(roomUuid, "python")).thenReturn(roomAfterUpdate);
+
+    CompletableFuture<JSONObject> languageChangeFuture = new CompletableFuture<>();
+    CompletableFuture<JSONObject> textUpdateFuture = new CompletableFuture<>();
+
+    receiver.on(LANGUAGE_CHANGE.name(), args -> languageChangeFuture.complete((JSONObject) args[0]));
+    receiver.on(TEXT_UPDATE.name(), args -> textUpdateFuture.complete((JSONObject) args[0]));
+
+    JSONObject languageChangeDto = new JSONObject();
+    languageChangeDto.put("language", "python");
+    languageChangeDto.put("username", senderName);
+    sender.emit(LANGUAGE_CHANGE.name(), languageChangeDto);
+
+    JSONObject langResult = languageChangeFuture.orTimeout(TIMEOUT, TimeUnit.MILLISECONDS).get();
+    Assertions.assertThat(langResult.getString("language")).isEqualTo("python");
+    Assertions.assertThat(langResult.getString("username")).isEqualTo(senderName);
+
+    JSONObject textUpdateResult = textUpdateFuture.orTimeout(TIMEOUT, TimeUnit.MILLISECONDS).get();
+
+    JSONObject expectedChange = new JSONObject();
+    expectedChange.put("range", new JSONObject()
+        .put("startLineNumber", 1).put("endLineNumber", 100)
+        .put("startColumn", 1).put("endColumn", 100));
+    expectedChange.put("text", pythonTemplate);
+
+    JSONObject expectedTextUpdate = new JSONObject();
+    expectedTextUpdate.put("username", senderName);
+    expectedTextUpdate.put("changes", new JSONArray().put(expectedChange));
+
+    Assertions.assertThat(textUpdateResult.getString("username")).isEqualTo(expectedTextUpdate.getString("username"));
+    JSONArray changes = textUpdateResult.getJSONArray("changes");
+    Assertions.assertThat(changes.length()).isEqualTo(1);
+    Assertions.assertThat(changes.getJSONObject(0).getString("text")).isEqualTo(pythonTemplate);
+
+    verify(roomService, timeout(TIMEOUT)).updateRoomEditorLanguage(roomUuid, "python");
+
+    ensureSocketsClosed(sender, receiver);
+  }
+
+  @Test
+  public void languageChangeInUnmodifiedRoomWithCustomTextShouldMarkAsModified() throws Exception {
+    UUID roomUuid = UUID.randomUUID();
+    Socket sender = initClient(roomUuid, senderName);
+    Socket receiver = initClient(roomUuid, receiverName);
+
+    String customText = "let a = 1; console.log('This is not a template');";
+    Room roomAfterUpdate = new Room();
+    roomAfterUpdate.setEditorLanguage("java");
+    roomAfterUpdate.setModifiedByWritingCode(true);
+    roomAfterUpdate.setEditorText(customText);
+
+    Mockito.when(roomService.updateRoomEditorLanguage(roomUuid, "java")).thenReturn(roomAfterUpdate);
+
+    clientsConnect(roomUuid, sender, receiver);
+
+    CompletableFuture<JSONObject> languageChangeFuture = new CompletableFuture<>();
+    CompletableFuture<JSONObject> textUpdateFuture = new CompletableFuture<>();
+
+    receiver.on(LANGUAGE_CHANGE.name(), args -> languageChangeFuture.complete((JSONObject) args[0]));
+    receiver.on(TEXT_UPDATE.name(), args -> textUpdateFuture.complete((JSONObject) args[0]));
+
+    JSONObject languageChangeDto = new JSONObject();
+    languageChangeDto.put("language", "java");
+    languageChangeDto.put("username", senderName);
+    sender.emit(LANGUAGE_CHANGE.name(), languageChangeDto);
+
+    JSONObject langResult = languageChangeFuture.orTimeout(TIMEOUT, TimeUnit.MILLISECONDS).get();
+    Assertions.assertThat(langResult.getString("language")).isEqualTo("java");
+    Assertions.assertThat(langResult.getString("username")).isEqualTo(senderName);
+
+    verify(roomService, timeout(TIMEOUT)).updateRoomEditorLanguage(roomUuid, "java");
+
+    Assertions.assertThatThrownBy(() -> textUpdateFuture.get(500, TimeUnit.MILLISECONDS))
+        .isInstanceOf(java.util.concurrent.TimeoutException.class);
+
+    ensureSocketsClosed(sender, receiver);
   }
 
   private Socket initClient(UUID roomUuid, String userName) throws URISyntaxException {

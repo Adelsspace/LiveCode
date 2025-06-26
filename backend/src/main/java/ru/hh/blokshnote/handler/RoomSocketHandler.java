@@ -5,6 +5,9 @@ import com.corundumstudio.socketio.ClientOperations;
 import com.corundumstudio.socketio.SocketIOClient;
 import com.corundumstudio.socketio.SocketIONamespace;
 import com.corundumstudio.socketio.SocketIOServer;
+import java.util.List;
+import java.util.UUID;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -12,11 +15,13 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 import ru.hh.blokshnote.config.WebSocketConfig;
 import ru.hh.blokshnote.dto.review.request.LlmStatusDto;
+import ru.hh.blokshnote.dto.websocket.ChangeDto;
 import ru.hh.blokshnote.dto.websocket.ClosingRoomDto;
 import ru.hh.blokshnote.dto.websocket.CursorPositionDto;
 import ru.hh.blokshnote.dto.websocket.EditorStateDto;
 import ru.hh.blokshnote.dto.websocket.LanguageChangeDto;
 import ru.hh.blokshnote.dto.websocket.OpeningRoomDto;
+import ru.hh.blokshnote.dto.websocket.RangeDto;
 import ru.hh.blokshnote.dto.websocket.TextSelectionDto;
 import ru.hh.blokshnote.dto.websocket.TextUpdateDto;
 import ru.hh.blokshnote.dto.websocket.UserActivityDto;
@@ -25,11 +30,6 @@ import ru.hh.blokshnote.dto.websocket.UsersUpdateDto;
 import ru.hh.blokshnote.entity.Room;
 import ru.hh.blokshnote.entity.User;
 import ru.hh.blokshnote.service.RoomService;
-
-import java.util.List;
-import java.util.UUID;
-import java.util.stream.Collectors;
-
 import static ru.hh.blokshnote.utility.WsMessageType.CLOSE_ROOM;
 import static ru.hh.blokshnote.utility.WsMessageType.CURSOR_POSITION;
 import static ru.hh.blokshnote.utility.WsMessageType.LANGUAGE_CHANGE;
@@ -56,6 +56,9 @@ public class RoomSocketHandler {
   private final String USER_STATE_KEY = "USER_STATE";
   private final RoomService roomService;
   private final SocketIOServer socketIOServer;
+
+  private final static int START_POS_FOR_TEMPLATE = 1;
+  private final static int END_POS_FOR_TEMPLATE = 100;
 
   public RoomSocketHandler(RoomService roomService, @Lazy SocketIOServer server) {
     this.roomService = roomService;
@@ -186,9 +189,13 @@ public class RoomSocketHandler {
 
   private void languageChangeEventHandler(SocketIOClient client, LanguageChangeDto data, AckRequest ackSender) {
     String roomUuid = client.getHandshakeData().getSingleUrlParam(ROOM_UUID.getLabel());
-    roomService.updateRoomEditorLanguage(UUID.fromString(roomUuid), data.getLanguage());
+    UUID uuidOfRoom = UUID.fromString(roomUuid);
+    Room room = roomService.updateRoomEditorLanguage(uuidOfRoom, data.getLanguage());
     LOGGER.info("In room with UUID={} user={} changed language to {}", roomUuid, data.getUsername(), data.getLanguage());
     SocketIONamespace namespace = client.getNamespace();
+    if (!room.isModifiedByWritingCode()) {
+      changeTemplateInRoom(room, namespace, data.getUsername());
+    }
     namespace.getRoomOperations(roomUuid).getClients()
         .stream()
         .filter(roomClient -> !roomClient.equals(client))
@@ -311,5 +318,18 @@ public class RoomSocketHandler {
     LOGGER.info("In room with UUID={} user={} updated text", roomUuid, data.getUsername());
     SocketIONamespace namespace = client.getNamespace();
     namespace.getRoomOperations(roomUuid).sendEvent(TEXT_UPDATE_SEND_ALL.name(), data);
+  }
+
+  private void changeTemplateInRoom(Room room, SocketIONamespace namespace, String username) {
+    LOGGER.info("Broadcast room UUID {}. with language {} and text {}", room.getRoomUuid(), room.getEditorLanguage(), room.getEditorText());
+    TextUpdateDto textUpdateDto = new TextUpdateDto();
+    textUpdateDto.setUsername(username);
+
+    ChangeDto change = new ChangeDto();
+    change.setRange(new RangeDto(START_POS_FOR_TEMPLATE, START_POS_FOR_TEMPLATE, END_POS_FOR_TEMPLATE, END_POS_FOR_TEMPLATE));
+    change.setText(room.getEditorText());
+    change.setVersion(1);
+    textUpdateDto.setChanges(List.of(change));
+    namespace.getRoomOperations(String.valueOf(room.getRoomUuid())).sendEvent(TEXT_UPDATE.name(), textUpdateDto);
   }
 }

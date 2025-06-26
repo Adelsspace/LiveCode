@@ -27,3 +27,9 @@ databaseChangeLog:
   - include:
       file: migrations/created_diff_history_table.yaml
       relativeToChangelogFile: true
+  - include:
+      file: migrations/add_room_updated_at.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: migrations/created_boolean_field_for_template_logic.yaml
+      relativeToChangelogFile: true

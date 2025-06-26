@@ -1,11 +1,12 @@
 package ru.hh.blokshnote.repository;
 
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
 import ru.hh.blokshnote.entity.Room;
 import ru.hh.blokshnote.entity.User;
+
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 
 public interface UserRepository extends JpaRepository<User, Long> {
   Optional<User> findByNameAndRoom(String name, Room room);
@@ -14,4 +15,5 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
   List<User> findAllByRoom(Room room);
 
+  void deleteByRoomIdIn(List<Long> roomIds);
 }

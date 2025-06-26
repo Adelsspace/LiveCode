@@ -1,5 +1,12 @@
 package ru.hh.blokshnote.unittesting;
 
+import java.util.UUID;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -8,17 +15,11 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 import ru.hh.blokshnote.dto.room.request.CreateRoomRequest;
 import ru.hh.blokshnote.dto.user.request.CreateUserRequest;
+import ru.hh.blokshnote.dto.websocket.EditorStateDto;
 import ru.hh.blokshnote.entity.Room;
 import ru.hh.blokshnote.entity.User;
 import ru.hh.blokshnote.service.RoomService;
-
-import java.util.UUID;
-
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import ru.hh.blokshnote.utility.LanguagesInRoom;
 
 @Transactional
 public class RoomServiceTest extends NoKafkaAbstractIntegrationTest {
@@ -167,5 +168,54 @@ public class RoomServiceTest extends NoKafkaAbstractIntegrationTest {
         .isInstanceOf(ResponseStatusException.class)
         .hasMessageContaining("User with this name already exists in the room")
         .matches(ex -> ((ResponseStatusException) ex).getStatusCode().equals(HttpStatus.CONFLICT));
+  }
+
+  @Test
+  void changeRoomTemplateWhenRoomExistsUpdatesEditorText() {
+    String alias = "java";
+    Room updated = roomService.updateRoomEditorLanguage(testRoomUuid, alias);
+
+    assertNotNull(updated);
+    assertEquals(testRoomUuid, updated.getRoomUuid());
+    String expectedTemplate = LanguagesInRoom.getTemplateByAlias(alias);
+    assertEquals(expectedTemplate, updated.getEditorText());
+  }
+
+
+  @Test
+  void changeRoomTemplateWhenRoomNotFoundThrowsNotFound() {
+    UUID nonExistent = UUID.randomUUID();
+    assertThrows(ResponseStatusException.class, () -> {
+      roomService.updateRoomEditorLanguage(nonExistent, "anyAlias");
+    }, "Expected ResponseStatusException when changing template of non-existent room");
+  }
+
+  @Test
+  void changeRoomLanguageWhenFlagIsFalseNotUsingTemplate() {
+    Room before = roomService.getRoomByUuid(testRoomUuid);
+    assertFalse(before.isModifiedByWritingCode());
+    String testText = "Not template text";
+
+    EditorStateDto dto = new EditorStateDto();
+    dto.setLanguage("javascript");
+    dto.setText(testText);
+    roomService.updateRoomEditor(testRoomUuid, dto);
+    roomService.updateRoomEditorLanguage(testRoomUuid, "java");
+
+    Room after = roomService.getRoomByUuid(testRoomUuid);
+
+    assertTrue(after.isModifiedByWritingCode());
+    assertEquals(testText, after.getEditorText());
+  }
+
+  @Test
+  void changeRoomTemplateWhenAliasNotFoundUsesPlainTemplate() {
+    String invalidAlias = "nonexistent";
+    Room updated = roomService.updateRoomEditorLanguage(testRoomUuid, invalidAlias);
+
+    assertNotNull(updated);
+    assertEquals(testRoomUuid, updated.getRoomUuid());
+    String expectedTemplate = LanguagesInRoom.getTemplateByAlias(invalidAlias);
+    assertEquals(expectedTemplate, updated.getEditorText());
   }
 }

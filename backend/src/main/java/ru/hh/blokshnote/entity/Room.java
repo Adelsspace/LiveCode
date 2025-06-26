@@ -6,7 +6,6 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
-
 import java.time.Instant;
 import java.util.UUID;
 
@@ -30,6 +29,9 @@ public class Room {
   @Column(name = "expired_at")
   private Instant expiredAt;
 
+  @Column(name = "updated_at")
+  private Instant updatedAt;
+
   @Column(name = "editor_text", nullable = false)
   private String editorText;
 
@@ -38,6 +40,9 @@ public class Room {
 
   @Column(name = "is_closed")
   private boolean isClosed;
+
+  @Column(name = "is_modified_by_code")
+  private boolean isModifiedByWritingCode = false;
 
   public Long getId() {
     return id;
@@ -75,6 +80,14 @@ public class Room {
     this.expiredAt = expiredAt;
   }
 
+  public Instant getUpdatedAt() {
+    return updatedAt;
+  }
+
+  public void setUpdatedAt(Instant updatedAt) {
+    this.updatedAt = updatedAt;
+  }
+
   public String getEditorText() {
     return editorText;
   }
@@ -97,5 +110,13 @@ public class Room {
 
   public void setClosed(boolean closed) {
     isClosed = closed;
+  }
+
+  public boolean isModifiedByWritingCode() {
+    return isModifiedByWritingCode;
+  }
+
+  public void setModifiedByWritingCode(boolean modifiedByWritingCode) {
+    isModifiedByWritingCode = modifiedByWritingCode;
   }
 }

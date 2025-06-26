@@ -4,14 +4,14 @@ import java.util.Set;
 
 public class UserColorUtil {
   private static final String[] COLOR_POOL = {
-      "#0bd5c2",
-      "#c277f9",
-      "#09ae9f",
-      "#ff7a92",
-      "#ffa520",
-      "#FF6348",
-      "#e74024",
-      "#00a329"
+      "0bd5c2",
+      "c277f9",
+      "09ae9f",
+      "ff7a92",
+      "ffa520",
+      "FF6348",
+      "e74024",
+      "00a329"
   };
 
   public static String generateUserColor(String username, Set<String> usedColors) {

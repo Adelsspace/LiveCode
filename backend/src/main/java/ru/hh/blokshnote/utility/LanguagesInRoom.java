@@ -1,0 +1,118 @@
+package ru.hh.blokshnote.utility;
+
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+
+public enum LanguagesInRoom {
+  JAVA("java", """
+        public class Main {
+            public static void main(String[] args) {
+                // Начните писать код
+            }
+        }
+        """),
+  PYTHON("python", "# Начните писать код\n"),
+  JAVASCRIPT("javascript", """
+        // Начните писать код
+        function main() {
+
+        }
+
+        main();
+        """),
+  TYPESCRIPT("typescript", """
+        // Начните писать код
+        function main(): void {
+
+        }
+
+        main();
+        """),
+  PLAINTEXT("plaintext", "Начните писать код\n"),
+  KOTLIN("kotlin", """
+      fun main() {
+          // Начните писать код
+      }
+      """),
+  GO("go", """
+      package main
+      
+      import "fmt"
+      
+      func main() {
+          // Начните писать код
+      }
+      """),
+  CPP("cpp", """
+      #include <iostream>
+      
+      int main() {
+          // Начните писать код
+          return 0;
+      }
+      """),
+  CSHARP("csharp", """
+      using System;
+      
+      class Program {
+          static void Main(string[] args) {
+              // Начните писать код
+          }
+      }
+      """),
+  SQL("sql", """
+      -- Начните писать SQL-запрос
+      SELECT * FROM table_name;
+      """),
+  RUBY("ruby", """
+      # Начните писать код
+      puts "Hello, world"
+      """),
+  PHP("php", """
+      <?php
+      // Начните писать код
+      echo "Hello, world";
+      ?>
+      """),
+  MARKDOWN("markdown", """
+      <!-- Начните писать документацию или заметки -->
+      
+      Текст **жирный**, *курсив*, `код`.
+      """);
+
+  private final String alias;
+  private final String template;
+
+  LanguagesInRoom(String alias, String template) {
+    this.alias = alias;
+    this.template = template;
+  }
+
+  public String getAlias() {
+    return alias;
+  }
+
+  public String getTemplate() {
+    return template;
+  }
+
+  private static final Map<String, LanguagesInRoom> ALIAS_MAP = new HashMap<>();
+  private static final Set<String> TEMPLATES_SET = new HashSet<>();
+
+  static {
+    for (LanguagesInRoom lang : values()) {
+      ALIAS_MAP.put(lang.alias, lang);
+      TEMPLATES_SET.add(lang.template);
+    }
+  }
+
+  public static String getTemplateByAlias(String alias) {
+    return ALIAS_MAP.getOrDefault(alias, PLAINTEXT).getTemplate();
+  }
+
+  public static boolean isInTemplatesSet(String text) {
+    return TEMPLATES_SET.contains(text);
+  }
+}

@@ -6,6 +6,16 @@ public class RangeDto {
   private int endLineNumber;
   private int endColumn;
 
+  public RangeDto() {
+  }
+
+  public RangeDto(int startLineNumber, int startColumn, int endLineNumber, int endColumn) {
+    this.startLineNumber = startLineNumber;
+    this.startColumn = startColumn;
+    this.endLineNumber = endLineNumber;
+    this.endColumn = endColumn;
+  }
+
   public int getStartLineNumber() {
     return startLineNumber;
   }
