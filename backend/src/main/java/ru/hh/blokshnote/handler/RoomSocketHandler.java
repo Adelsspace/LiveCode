@@ -14,6 +14,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 import ru.hh.blokshnote.config.WebSocketConfig;
+import ru.hh.blokshnote.dto.review.request.LlmStatusDto;
 import ru.hh.blokshnote.dto.websocket.ChangeDto;
 import ru.hh.blokshnote.dto.websocket.ClosingRoomDto;
 import ru.hh.blokshnote.dto.websocket.CursorPositionDto;
@@ -32,6 +33,7 @@ import ru.hh.blokshnote.service.RoomService;
 import static ru.hh.blokshnote.utility.WsMessageType.CLOSE_ROOM;
 import static ru.hh.blokshnote.utility.WsMessageType.CURSOR_POSITION;
 import static ru.hh.blokshnote.utility.WsMessageType.LANGUAGE_CHANGE;
+import static ru.hh.blokshnote.utility.WsMessageType.LLM_STATUS;
 import static ru.hh.blokshnote.utility.WsMessageType.NEW_COMMENT;
 import static ru.hh.blokshnote.utility.WsMessageType.NEW_EDITOR_STATE;
 import static ru.hh.blokshnote.utility.WsMessageType.NEW_EDITOR_STATE_SEND_ALL;
@@ -269,6 +271,24 @@ public class RoomSocketHandler {
           return (userState != null && userState.isAdmin());
         })
         .forEach(client -> client.sendEvent(NEW_COMMENT.name()));
+  }
+
+
+  public void broadcastLLMStatusToAdmins(UUID uuidOfRoom, boolean status) {
+    SocketIONamespace namespace = socketIOServer.getNamespace(WebSocketConfig.ROOM_URI_TEMPLATE);
+    if (namespace == null) {
+      LOGGER.error("Namespace not initialized in RoomSocketHandler. Cannot broadcast LLM_STATUS.");
+      return;
+    }
+    String roomUuid = String.valueOf(uuidOfRoom);
+    LOGGER.info("Broadcasting LLM_STATUS={} notification to admins in room {}", status, roomUuid);
+    namespace.getRoomOperations(roomUuid).getClients()
+            .stream()
+            .filter(client -> {
+              UserStateDto userState = client.get(USER_STATE_KEY);
+              return (userState != null && userState.isAdmin());
+            })
+            .forEach(client -> client.sendEvent(LLM_STATUS.name(), new LlmStatusDto(status)));
   }
 
   private UserStateDto setUserState(String roomUuid, SocketIOClient client) {
