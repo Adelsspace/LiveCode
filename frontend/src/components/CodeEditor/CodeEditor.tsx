@@ -1,10 +1,6 @@
 import { useRef, useState } from "react";
-import {
-  changeEditorFontSize,
-  changeEditorTheme,
-  getSettings,
-} from "../../utils";
-import { EditorFontSize, EditorTheme } from "../../types/shared.types";
+import { changeEditorFontSize, getSettings } from "../../utils";
+import { EditorFontSize } from "../../types/shared.types";
 import { EditorControls } from "../EditorControls/EditorControls";
 import MonacoEditor from "../MonacoEditor/MonacoEditor";
 import { Logo } from "../Logo/Logo";
@@ -21,7 +17,6 @@ interface CodeEditorProps {
 
 export const CodeEditor = ({ isAdmin }: CodeEditorProps) => {
   const initialSettings = getSettings();
-  const [editorTheme, setEditorTheme] = useState(initialSettings.editorTheme);
   const [editorFontSize, setEditorFontSize] = useState(
     initialSettings.editorFontSize
   );
@@ -30,11 +25,6 @@ export const CodeEditor = ({ isAdmin }: CodeEditorProps) => {
   const [editorWidth, setEditorWidth] = useState(67);
   const containerRef = useRef<HTMLDivElement>(null);
   const [isChatVisible, setIsChatVisible] = useState(true);
-
-  const handleThemeChange = (newTheme: EditorTheme) => {
-    setEditorTheme(newTheme);
-    changeEditorTheme(newTheme);
-  };
 
   const handleFontSizeChange = (newFontSize: EditorFontSize) => {
     setEditorFontSize(newFontSize);
@@ -95,7 +85,6 @@ export const CodeEditor = ({ isAdmin }: CodeEditorProps) => {
             <MonacoEditor
               initialCode={text}
               editorLanguage={language}
-              editorTheme={editorTheme}
               editorFontSize={editorFontSize}
             />
           </div>
@@ -118,9 +107,7 @@ export const CodeEditor = ({ isAdmin }: CodeEditorProps) => {
       </main>
       <footer className={styles.footer}>
         <EditorControls
-          editorTheme={editorTheme}
           editorFontSize={editorFontSize}
-          onThemeChange={handleThemeChange}
           onFontSizeChange={handleFontSizeChange}
           isAdmin={isAdmin}
           isChatVisible={isChatVisible}

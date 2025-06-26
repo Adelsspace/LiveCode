@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import styles from "./ThemeToggle.module.scss";
-import { changeTheme, getSettings } from "../../utils";
+import { changeEditorTheme, changeTheme, getSettings } from "../../utils";
 
 const ThemeToggle = () => {
   const [theme, setTheme] = useState<"light" | "dark">(() => {
@@ -11,6 +11,10 @@ const ThemeToggle = () => {
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
     changeTheme(theme);
+
+    const editorTheme = theme === "light" ? "light" : "vs-dark";
+    changeEditorTheme(editorTheme);
+    document.documentElement.setAttribute("editor-theme", editorTheme);
   }, [theme]);
 
   const toggleTheme = () => {

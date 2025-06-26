@@ -1,11 +1,7 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import Editor from "@monaco-editor/react";
 import styles from "./MonacoEditor.module.scss";
-import {
-  EditorFontSize,
-  EditorLanguage,
-  EditorTheme,
-} from "../../types/shared.types";
+import { EditorFontSize, EditorLanguage } from "../../types/shared.types";
 import * as monaco from "monaco-editor";
 import { socketService } from "../../services/socketService";
 import { useAppDispatch, useAppSelector } from "../../hooks/reduxHooks";
@@ -19,18 +15,17 @@ import type {
   User,
   TextUpdate,
 } from "../../types/shared.types";
+import { getSettings } from "../../utils";
 
 type CodeEditorProps = {
   initialCode?: string;
   editorLanguage?: EditorLanguage;
-  editorTheme?: EditorTheme;
   editorFontSize?: EditorFontSize;
 };
 
 const MonacoEditor = ({
   initialCode = "// Начните писать код\n",
   editorLanguage = "javascript",
-  editorTheme = "vs-dark",
   editorFontSize = 14,
 }: CodeEditorProps) => {
   const dispatch = useAppDispatch();
@@ -57,6 +52,35 @@ const MonacoEditor = ({
   );
   const hasCalledUpdate = useRef(false);
   const hasRun = useRef(false);
+
+  const initialSettings = getSettings();
+  const [currentEditorTheme, setCurrentEditorTheme] = useState<string>(
+    document.documentElement.getAttribute("editor-theme") ||
+      initialSettings.editorTheme
+  );
+
+  useEffect(() => {
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        if (
+          mutation.type === "attributes" &&
+          mutation.attributeName === "editor-theme"
+        ) {
+          const newTheme =
+            document.documentElement.getAttribute("editor-theme") ||
+            currentEditorTheme;
+          setCurrentEditorTheme(newTheme);
+        }
+      });
+    });
+
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["editor-theme"],
+    });
+
+    return () => observer.disconnect();
+  }, [currentEditorTheme]);
 
   useEffect(() => {
     if (!editorRef.current || !textUpdate) return;
@@ -309,7 +333,7 @@ const MonacoEditor = ({
       <Editor
         height="81vh"
         language={stateLanguage || editorLanguage}
-        theme={editorTheme}
+        theme={currentEditorTheme}
         defaultValue={initialCode}
         onMount={handleEditorMount}
         options={{
