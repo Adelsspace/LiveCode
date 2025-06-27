@@ -24,6 +24,7 @@ interface RoomState {
   languageChange: LanguageChange | null;
   textUpdate: TextUpdate | null;
   commentsUpdated: boolean;
+  llmIsAvailable: boolean;
 }
 
 const getInitialState = (): RoomState => {
@@ -46,6 +47,7 @@ const getInitialState = (): RoomState => {
         languageChange: null,
         textUpdate: null,
         commentsUpdated: false,
+        llmIsAvailable: true,
       };
     } catch (error) {
       console.error("Ошибка при парсинге participantData:", error);
@@ -66,6 +68,7 @@ const getInitialState = (): RoomState => {
     languageChange: null,
     textUpdate: null,
     commentsUpdated: false,
+    llmIsAvailable: true,
   };
 };
 
@@ -155,6 +158,10 @@ const roomSlice = createSlice({
     setCommentsUpdated(state, action: PayloadAction<boolean>) {
       state.commentsUpdated = action.payload;
     },
+    setLlmIsAvailable(state, action: PayloadAction<boolean>) {
+      if (state.llmIsAvailable !== action.payload)
+        state.llmIsAvailable = action.payload;
+    },
   },
 });
 
@@ -175,6 +182,7 @@ export const {
   setUserActivityByUsername,
   setVersionChange,
   setCommentsUpdated,
+  setLlmIsAvailable,
 } = roomSlice.actions;
 
 export default roomSlice.reducer;

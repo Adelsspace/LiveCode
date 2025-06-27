@@ -12,6 +12,7 @@ import { Button } from "../Button/Button";
 import { useDispatch } from "react-redux";
 import { setCommentsUpdated } from "../../store/slices/roomSlice";
 import { SendIcon } from "../icons";
+import DotLoader from "../DotLoader/DotLoader";
 
 export const Chat: React.FC = () => {
   const [message, setMessage] = useState<string>("");
@@ -23,7 +24,7 @@ export const Chat: React.FC = () => {
 
   const { roomId, adminToken, name } = useAppSelector((state) => state.room);
   const currentUser = useAppSelector((state) => state.room.name);
-
+  const llmIsAvailable = useAppSelector((state) => state.room.llmIsAvailable);
   const { data, isLoading, isError, refetch, isFetching } = useGetCommentsQuery(
     { roomId: roomId!, adminToken: adminToken! },
     { skip: !roomId || !adminToken }
@@ -132,12 +133,15 @@ export const Chat: React.FC = () => {
           disabled={isFetching || !message.trim()}
           className={styles.submitButton}
         />
-        <Button
-          type="button"
-          onClick={() => setIsModalOpen(true)}
-          disabled={isFetching}
-          label={"Анализ кода"}
-        />
+        {llmIsAvailable ? (
+          <Button
+            type="button"
+            onClick={() => setIsModalOpen(true)}
+            label={"Анализ кода"}
+          />
+        ) : (
+          <DotLoader />
+        )}
       </form>
 
       <GptModal

@@ -9,6 +9,7 @@ import {
   setTextUpdate,
   setUserActivityByUsername,
   setCommentsUpdated,
+  setLlmIsAvailable,
 } from "../store/slices/roomSlice";
 import { roomApi } from "../store/api/roomApi";
 import type { ThunkDispatch, UnknownAction } from "@reduxjs/toolkit";
@@ -87,6 +88,9 @@ class SocketService {
     });
     this.socket.on("CURSOR_POSITION", (payload: CursorPosition) => {
       dispatch(setCursorPosition(payload));
+    });
+    this.socket.on("LLM_STATUS", (payload: { isAvailable: boolean }) => {
+      dispatch(setLlmIsAvailable(payload.isAvailable));
     });
 
     this.socket.on(
