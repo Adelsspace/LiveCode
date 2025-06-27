@@ -99,7 +99,6 @@ public class SocketIOIntegrationTest extends NoKafkaAbstractIntegrationTest {
     Assertions.assertThat(usersStates.length()).isEqualTo(1);
     JSONObject usersState = usersStates.getJSONObject(0);
     Assertions.assertThat(usersState.getString("username")).isEqualTo(userName);
-    Assertions.assertThat(usersState.getBoolean("isActive")).isTrue();
     Assertions.assertThat(usersState.getBoolean("isAdmin")).isFalse();
     ensureSocketsClosed(socket);
   }
@@ -307,7 +306,6 @@ public class SocketIOIntegrationTest extends NoKafkaAbstractIntegrationTest {
     Assertions.assertThat(satesAfterFirstConnect.length()).isEqualTo(1);
     var janeStateAfterConnect = satesAfterFirstConnect.getJSONObject(0);
     Assertions.assertThat(janeStateAfterConnect.getString("username")).isEqualTo(nameToDisconnected);
-    Assertions.assertThat(janeStateAfterConnect.getBoolean("isActive")).isTrue();
     Assertions.assertThat(janeStateAfterConnect.getBoolean("isAdmin")).isFalse();
 
     clientStayConnected.connect();
@@ -323,7 +321,6 @@ public class SocketIOIntegrationTest extends NoKafkaAbstractIntegrationTest {
     Assertions.assertThat(satesAfterDisconnect.length()).isEqualTo(1);
     var johnState = satesAfterDisconnect.getJSONObject(0);
     Assertions.assertThat(johnState.getString("username")).isEqualTo(nameStayConnected);
-    Assertions.assertThat(johnState.getBoolean("isActive")).isTrue();
     Assertions.assertThat(johnState.getBoolean("isAdmin")).isFalse();
 
     ensureSocketsClosed(clientStayConnected);

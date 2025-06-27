@@ -1,0 +1,14 @@
+databaseChangeLog:
+- changeSet:
+    id: 1750954520930-1
+    author: aleksey (generated)
+    changes:
+    - addColumn:
+        columns:
+        - column:
+            constraints:
+              nullable: false
+            name: last_ping_time
+            type: timestamp(6)
+        tableName: users
+

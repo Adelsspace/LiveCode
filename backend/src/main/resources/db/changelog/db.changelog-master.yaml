@@ -33,3 +33,6 @@ databaseChangeLog:
   - include:
       file: migrations/created_boolean_field_for_template_logic.yaml
       relativeToChangelogFile: true
+  - include:
+      file: migrations/added_user_last_ping_time.yaml
+      relativeToChangelogFile: true
