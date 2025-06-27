@@ -9,6 +9,8 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 
+import java.time.Instant;
+
 @Entity
 @Table(name = "users")
 public class User {
@@ -30,14 +32,8 @@ public class User {
   @Column(name = "color", nullable = false)
   private String color;
 
-  public User() {
-  }
-
-  public User(String name, boolean isAdmin, Room room) {
-    this.name = name;
-    this.isAdmin = isAdmin;
-    this.room = room;
-  }
+  @Column(name = "last_ping_time", nullable = false)
+  private Instant lastPingTime;
 
   public Long getId() {
     return id;
@@ -73,5 +69,13 @@ public class User {
 
   public void setColor(String color) {
     this.color = color;
+  }
+
+  public Instant getLastPingTime() {
+    return lastPingTime;
+  }
+
+  public void setLastPingTime(Instant lastPingTime) {
+    this.lastPingTime = lastPingTime;
   }
 }

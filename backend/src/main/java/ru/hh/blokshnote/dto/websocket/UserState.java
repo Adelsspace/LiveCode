@@ -1,19 +1,27 @@
 package ru.hh.blokshnote.dto.websocket;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-
-public class UserStateDto {
+public class UserState {
+  private Long id;
   private String username;
   private boolean isAdmin;
   private String color;
 
-  public UserStateDto(String username, boolean isAdmin, String color) {
+  public UserState(Long id, String username, boolean isAdmin, String color) {
+    this.id = id;
     this.username = username;
     this.isAdmin = isAdmin;
     this.color = color;
   }
 
-  public UserStateDto() {
+  public UserState() {
+  }
+
+  public Long getId() {
+    return id;
+  }
+
+  public void setId(Long id) {
+    this.id = id;
   }
 
   public String getUsername() {
@@ -24,7 +32,6 @@ public class UserStateDto {
     this.username = username;
   }
 
-  @JsonProperty(value="isAdmin")
   public boolean isAdmin() {
     return isAdmin;
   }
