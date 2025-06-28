@@ -8,5 +8,5 @@ import ru.hh.blokshnote.config.KafkaConfig;
         KafkaConfig.WEBSOCKET_TOPIC
     }
 )
-public class WithKafkaAbstractTest extends AbstractIntegrationTest {
+public abstract class WithKafkaAbstractTest extends AbstractIntegrationTest {
 }

@@ -13,10 +13,9 @@ import org.springframework.stereotype.Service;
 import static ru.hh.blokshnote.config.KafkaConfig.WEBSOCKET_TOPIC;
 import ru.hh.blokshnote.config.WebSocketConfig;
 import ru.hh.blokshnote.dto.kafka.KafkaRoomEvent;
-import ru.hh.blokshnote.dto.websocket.UserStateDto;
+import ru.hh.blokshnote.dto.websocket.UserState;
 import static ru.hh.blokshnote.handler.RoomSocketHandler.USER_STATE_KEY;
 import ru.hh.blokshnote.utility.WsMessageType;
-import static ru.hh.blokshnote.utility.WsMessageType.NEW_COMMENT;
 
 @Service
 public class WebsocketMessagesListener {
@@ -44,8 +43,8 @@ public class WebsocketMessagesListener {
       Class<?> dtoClass = event.eventType().getDtoClass();
       Object payloadDto = objectMapper.readValue(event.payload(), dtoClass);
 
-      if (event.eventType().equals(WsMessageType.NEW_COMMENT)) {
-        sendCommentNotificationToAdmins(namespace, event.roomUuid());
+      if (event.eventType().equals(WsMessageType.NEW_COMMENT) || event.eventType().equals(WsMessageType.LLM_STATUS)) {
+        sendNotificationToAdmins(namespace, event.roomUuid(), event.eventType(), payloadDto);
       } else if (event.eventType().equals(WsMessageType.CLOSE_ROOM)) {
         namespace.getRoomOperations(event.roomUuid()).sendEvent(event.eventType().name(), payloadDto);
         disconnectNonAdmins(namespace, event.roomUuid());
@@ -62,19 +61,19 @@ public class WebsocketMessagesListener {
   private void disconnectNonAdmins(SocketIONamespace namespace, String roomUuid) {
     namespace.getRoomOperations(roomUuid).getClients().stream()
         .filter(roomClient -> {
-          UserStateDto userState = roomClient.get(USER_STATE_KEY);
+          UserState userState = roomClient.get(USER_STATE_KEY);
           return (userState == null || !userState.isAdmin());
         })
         .forEach(ClientOperations::disconnect);
   }
 
-  private void sendCommentNotificationToAdmins(SocketIONamespace namespace, String roomUuid) {
+  private void sendNotificationToAdmins(SocketIONamespace namespace, String roomUuid, WsMessageType messageType, Object payloadDto) {
     namespace.getRoomOperations(roomUuid).getClients()
         .stream()
         .filter(client -> {
-          UserStateDto userState = client.get(USER_STATE_KEY);
+          UserState userState = client.get(USER_STATE_KEY);
           return (userState != null && userState.isAdmin());
         })
-        .forEach(client -> client.sendEvent(NEW_COMMENT.name()));
+        .forEach(client -> client.sendEvent(messageType.name(), payloadDto));
   }
 }

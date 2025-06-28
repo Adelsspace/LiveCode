@@ -183,9 +183,8 @@ public class RoomSocketHandler {
     UUID uuidOfRoom = UUID.fromString(roomUuid);
     Room room = roomService.updateRoomEditorLanguage(uuidOfRoom, data.getLanguage());
     LOGGER.info("In room with UUID={} user={} changed language to {}", roomUuid, data.getUsername(), data.getLanguage());
-    SocketIONamespace namespace = client.getNamespace();
     if (!room.isModifiedByWritingCode()) {
-      changeTemplateInRoom(room, namespace, data.getUsername());
+      changeTemplateInRoom(room, data.getUsername());
     }
     messagesProducer.publishRoomEvent(roomUuid, LANGUAGE_CHANGE, data, client.getSessionId().toString());
   }
@@ -239,7 +238,6 @@ public class RoomSocketHandler {
     messagesProducer.publishRoomEvent(roomUuid, NEW_COMMENT, new NewCommentDto(), null);
   }
 
-
   public void broadcastLLMStatusToAdmins(UUID uuidOfRoom, boolean status) {
     SocketIONamespace namespace = socketIOServer.getNamespace(WebSocketConfig.ROOM_URI_TEMPLATE);
     if (namespace == null) {
@@ -248,13 +246,7 @@ public class RoomSocketHandler {
     }
     String roomUuid = String.valueOf(uuidOfRoom);
     LOGGER.info("Broadcasting LLM_STATUS={} notification to admins in room {}", status, roomUuid);
-    namespace.getRoomOperations(roomUuid).getClients()
-            .stream()
-            .filter(client -> {
-              UserState userState = client.get(USER_STATE_KEY);
-              return (userState != null && userState.isAdmin());
-            })
-            .forEach(client -> client.sendEvent(LLM_STATUS.name(), new LlmStatusDto(status)));
+    messagesProducer.publishRoomEvent(roomUuid, LLM_STATUS, new LlmStatusDto(status), null);
   }
 
   private UserState setUserState(String roomUuid, SocketIOClient client) {
@@ -285,7 +277,7 @@ public class RoomSocketHandler {
     messagesProducer.publishRoomEvent(roomUuid, TEXT_UPDATE_SEND_ALL, data, null);
   }
 
-  private void changeTemplateInRoom(Room room, SocketIONamespace namespace, String username) {
+  private void changeTemplateInRoom(Room room, String username) {
     LOGGER.info("Broadcast room UUID {}. with language {} and text {}", room.getRoomUuid(), room.getEditorLanguage(), room.getEditorText());
     TextUpdateDto textUpdateDto = new TextUpdateDto();
     textUpdateDto.setUsername(username);
@@ -295,6 +287,7 @@ public class RoomSocketHandler {
     change.setText(room.getEditorText());
     change.setVersion(1);
     textUpdateDto.setChanges(List.of(change));
-    namespace.getRoomOperations(String.valueOf(room.getRoomUuid())).sendEvent(TEXT_UPDATE.name(), textUpdateDto);
+    String roomUuid = String.valueOf(room.getRoomUuid());
+    messagesProducer.publishRoomEvent(roomUuid, TEXT_UPDATE, textUpdateDto, null);
   }
 }
