@@ -35,7 +35,7 @@ public class RoomController {
 
   @PostMapping
   public AdminTokenDto createRoom(@RequestBody CreateRoomRequest request) {
-    Room createdRoom = roomService.createRoomWithAdmin(request);
+    Room createdRoom = roomService.createRoom(request);
     return new AdminTokenDto(createdRoom.getAdminToken());
   }
 

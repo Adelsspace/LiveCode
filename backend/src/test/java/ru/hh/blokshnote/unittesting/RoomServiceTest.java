@@ -1,12 +1,5 @@
 package ru.hh.blokshnote.unittesting;
 
-import java.util.UUID;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,6 +14,15 @@ import ru.hh.blokshnote.entity.User;
 import ru.hh.blokshnote.service.RoomService;
 import ru.hh.blokshnote.utility.LanguagesInRoom;
 
+import java.util.UUID;
+
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 @Transactional
 public class RoomServiceTest extends NoKafkaAbstractIntegrationTest {
   @Autowired
@@ -34,9 +36,11 @@ public class RoomServiceTest extends NoKafkaAbstractIntegrationTest {
   public void setUp() {
     CreateRoomRequest request = new CreateRoomRequest();
     request.setUuid(testRoomUuid);
-    request.setUsername(adminUsername);
 
-    testRoom = roomService.createRoomWithAdmin(request);
+    testRoom = roomService.createRoom(request);
+    CreateUserRequest userRequest = new CreateUserRequest();
+    userRequest.setUsername(adminUsername);
+    roomService.addAdminToRoom(testRoom.getRoomUuid(), testRoom.getAdminToken(), userRequest);
   }
 
   @Test
@@ -65,15 +69,13 @@ public class RoomServiceTest extends NoKafkaAbstractIntegrationTest {
   }
 
   @Test
-  void testCreateRoomWithAdmin() {
+  void testCreateRoom() {
     UUID roomUuid = UUID.randomUUID();
-    String adminName = "admin";
 
     CreateRoomRequest request = new CreateRoomRequest();
     request.setUuid(roomUuid);
-    request.setUsername(adminName);
 
-    Room room = roomService.createRoomWithAdmin(request);
+    Room room = roomService.createRoom(request);
 
     assertNotNull(room);
     assertEquals(roomUuid, room.getRoomUuid());
@@ -84,13 +86,10 @@ public class RoomServiceTest extends NoKafkaAbstractIntegrationTest {
 
   @Test
   void testCreateRoomWithExistingUuid() {
-    String adminName = "admin1";
-
     CreateRoomRequest request = new CreateRoomRequest();
     request.setUuid(testRoomUuid);
-    request.setUsername(adminName);
 
-    Room room = roomService.createRoomWithAdmin(request);
+    Room room = roomService.createRoom(request);
 
     assertNotNull(room);
     assertEquals(testRoomUuid, room.getRoomUuid());

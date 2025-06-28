@@ -1,12 +1,5 @@
 package ru.hh.blokshnote.unittesting;
 
-import java.util.List;
-import java.util.UUID;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,11 +10,21 @@ import ru.hh.blokshnote.dto.comment.request.CreateCommentDto;
 import ru.hh.blokshnote.dto.comment.response.CommentDto;
 import ru.hh.blokshnote.dto.comment.response.RoomCommentsResponse;
 import ru.hh.blokshnote.dto.room.request.CreateRoomRequest;
+import ru.hh.blokshnote.dto.user.request.CreateUserRequest;
 import ru.hh.blokshnote.entity.Comment;
 import ru.hh.blokshnote.entity.Room;
 import ru.hh.blokshnote.repository.CommentRepository;
 import ru.hh.blokshnote.service.CommentService;
 import ru.hh.blokshnote.service.RoomService;
+
+import java.util.List;
+import java.util.UUID;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Transactional
 public class CommentServiceTest extends NoKafkaAbstractIntegrationTest {
@@ -42,8 +45,10 @@ public class CommentServiceTest extends NoKafkaAbstractIntegrationTest {
   public void setUp() {
     CreateRoomRequest request = new CreateRoomRequest();
     request.setUuid(testRoomUuid);
-    request.setUsername(adminUsername);
-    testRoom = roomService.createRoomWithAdmin(request);
+    testRoom = roomService.createRoom(request);
+    CreateUserRequest userRequest = new CreateUserRequest();
+    userRequest.setUsername(adminUsername);
+    roomService.addAdminToRoom(testRoom.getRoomUuid(), testRoom.getAdminToken(), userRequest);
   }
 
   @Test
