@@ -52,7 +52,7 @@ public class RoomService {
   }
 
   @Transactional
-  public Room createRoomWithAdmin(CreateRoomRequest request) {
+  public Room createRoom(CreateRoomRequest request) {
     UUID roomUuid = request.getUuid();
 
     Optional<Room> existingRoom = roomRepository.findByRoomUuid(roomUuid);
@@ -72,17 +72,8 @@ public class RoomService {
     room.setClosed(false);
     room = roomRepository.save(room);
 
-    User adminUser = new User();
-    adminUser.setName(request.getUsername());
-    adminUser.setAdmin(true);
-    adminUser.setRoom(room);
-    adminUser.setColor(UserColorUtil.generateUserColor(request.getUsername(), Set.of()));
-    adminUser.setLastPingTime(Instant.now());
-    userRepository.save(adminUser);
-
     return room;
   }
-
 
   @Transactional
   public User addUserToRoom(UUID roomUuid, CreateUserRequest request) {
