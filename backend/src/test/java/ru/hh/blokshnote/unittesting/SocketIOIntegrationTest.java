@@ -37,7 +37,7 @@ import static ru.hh.blokshnote.utility.WsMessageType.TEXT_UPDATE;
 import static ru.hh.blokshnote.utility.WsMessageType.USERS_UPDATE;
 import static ru.hh.blokshnote.utility.WsMessageType.USER_ACTIVITY;
 
-public class SocketIOIntegrationTest extends NoKafkaAbstractIntegrationTest {
+public class SocketIOIntegrationTest extends WithKafkaAbstractTest {
 
   @MockitoBean
   private RoomService roomService;
