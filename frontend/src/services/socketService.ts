@@ -119,8 +119,8 @@ class SocketService {
   sendCursorPosition(payload: CursorPosition) {
     this.socket?.emit("CURSOR_POSITION", payload);
   }
-  sendUserActivity(isActive: boolean, username: string) {
-    const payload = { isActive, username };
+  sendUserActivity(username: string, isActive: boolean) {
+    const payload = { username, isActive };
     this.socket?.emit("USER_ACTIVITY", payload);
   }
 

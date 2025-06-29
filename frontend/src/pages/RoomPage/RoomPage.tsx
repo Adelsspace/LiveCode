@@ -68,7 +68,7 @@ const RoomPage = () => {
     if (!username) return;
 
     const updateUserActivity = (isActive: boolean) => {
-      socketService.sendUserActivity(isActive, username);
+      socketService.sendUserActivity(username, isActive);
       dispatch(setUserActivityByUsername({ isActive, username }));
     };
 
