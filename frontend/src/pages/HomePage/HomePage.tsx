@@ -12,7 +12,6 @@ const HomePage = () => {
     try {
       const roomId = crypto.randomUUID();
       const { adminToken } = await createRoom({
-        username: "Host",
         uuid: roomId,
       }).unwrap();
 

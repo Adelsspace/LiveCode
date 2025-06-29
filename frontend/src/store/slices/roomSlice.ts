@@ -8,6 +8,7 @@ import {
   User,
   UserActivity,
 } from "../../types/shared.types";
+import { compareUserLists } from "../../utils";
 
 interface RoomState {
   roomId: string | null;
@@ -89,6 +90,9 @@ const roomSlice = createSlice({
     },
     setUsers: (state, action: PayloadAction<User[]>) => {
       const newUsers = action.payload;
+
+      if (compareUserLists(state.users, newUsers)) return;
+
       const currentUsernames = newUsers.map((u) => u.username);
 
       Object.keys(state.textSelections).forEach((username) => {

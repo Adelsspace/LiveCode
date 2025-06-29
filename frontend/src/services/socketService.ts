@@ -17,6 +17,7 @@ import {
   CursorPosition,
   TextSelection,
   TextUpdate,
+  User,
 } from "../types/shared.types";
 
 class SocketService {
@@ -60,19 +61,9 @@ class SocketService {
 
     const dispatch = this.dispatch;
 
-    this.socket.on(
-      "USERS_UPDATE",
-      (data: {
-        usersStates: {
-          username: string;
-          isActive: boolean;
-          isAdmin: boolean;
-          color: string;
-        }[];
-      }) => {
-        dispatch(setUsers(data.usersStates));
-      }
-    );
+    this.socket.on("USERS_UPDATE", (payload: { usersStates: User[] }) => {
+      dispatch(setUsers(payload.usersStates));
+    });
 
     this.socket.on(
       "NEW_EDITOR_STATE",

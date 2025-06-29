@@ -13,12 +13,6 @@ export interface CreateRoomRequest {
    * @type {string}
    * @memberof CreateRoomRequest
    */
-  username?: string;
-  /**
-   *
-   * @type {string}
-   * @memberof CreateRoomRequest
-   */
   uuid?: string;
 }
 export interface RoomDto {

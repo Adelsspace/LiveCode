@@ -4,3 +4,4 @@ export * from "./changeEditorFontSize";
 export * from "./changeEditorTheme";
 export * from "./changeEditorLanguage";
 export * from "./localStorageUtils";
+export * from "./compareUserLists";

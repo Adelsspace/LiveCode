@@ -17,6 +17,7 @@ const RoomPage = () => {
 
   const [isAdmin, setIsAdmin] = useState(false);
   const [username, setUsername] = useState<string>("");
+  const [isActive, setIsActive] = useState<boolean>(true);
 
   const { data: roomData, error: roomError } = useGetRoomQuery(roomId!, {
     skip: !roomId,
@@ -72,22 +73,39 @@ const RoomPage = () => {
     };
 
     const handleVisibilityChange = () => {
-      updateUserActivity(document.visibilityState === "visible");
+      const active = document.visibilityState === "visible" && isActive;
+      setIsActive(active);
+      updateUserActivity(active);
     };
 
-    const handleBlur = () => updateUserActivity(false);
-    const handleFocus = () => updateUserActivity(true);
+    const handleBlur = () => {
+      updateUserActivity(false);
+      setIsActive(false);
+    };
+
+    const handleFocus = () => {
+      updateUserActivity(true);
+      setIsActive(true);
+    };
+
+    let intervalId: number;
+    if (isActive) {
+      intervalId = setInterval(() => {
+        updateUserActivity(isActive);
+      }, 1000);
+    }
 
     document.addEventListener("visibilitychange", handleVisibilityChange);
     window.addEventListener("blur", handleBlur);
     window.addEventListener("focus", handleFocus);
 
     return () => {
+      clearInterval(intervalId);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
       window.removeEventListener("blur", handleBlur);
       window.removeEventListener("focus", handleFocus);
     };
-  }, [username, dispatch]);
+  }, [username, dispatch, isActive]);
 
   const handleAuthSuccess = (usernameInput: string, isAdmin: boolean) => {
     setUsername(usernameInput);

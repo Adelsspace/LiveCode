@@ -29,7 +29,7 @@ export type Participant = {
 
 export interface User {
   username: string;
-  isActive: boolean;
+  isActive?: boolean;
   isAdmin: boolean;
   color: string;
 }
