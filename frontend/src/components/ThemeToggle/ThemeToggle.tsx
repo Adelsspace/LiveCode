@@ -1,8 +1,11 @@
 import { useEffect, useState } from "react";
 import styles from "./ThemeToggle.module.scss";
 import { changeEditorTheme, changeTheme, getSettings } from "../../utils";
+import { useAppDispatch } from "../../hooks/reduxHooks";
+import { setEditorTheme } from "../../store/slices/roomSlice";
 
 const ThemeToggle = () => {
+  const dispatch = useAppDispatch();
   const [theme, setTheme] = useState<"light" | "dark">(() => {
     const currentSettings = getSettings();
     return currentSettings.theme;
@@ -14,8 +17,9 @@ const ThemeToggle = () => {
 
     const editorTheme = theme === "light" ? "light" : "vs-dark";
     changeEditorTheme(editorTheme);
-    document.documentElement.setAttribute("editor-theme", editorTheme);
-  }, [theme]);
+
+    dispatch(setEditorTheme(editorTheme));
+  }, [theme, dispatch]);
 
   const toggleTheme = () => {
     setTheme((prevTheme) => {

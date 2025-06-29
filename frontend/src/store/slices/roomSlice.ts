@@ -26,6 +26,7 @@ interface RoomState {
   textUpdate: TextUpdate | null;
   commentsUpdated: boolean;
   llmIsAvailable: boolean;
+  editorTheme: "light" | "vs-dark";
 }
 
 const getInitialState = (): RoomState => {
@@ -49,6 +50,7 @@ const getInitialState = (): RoomState => {
         textUpdate: null,
         commentsUpdated: false,
         llmIsAvailable: true,
+        editorTheme: "vs-dark",
       };
     } catch (error) {
       console.error("Ошибка при парсинге participantData:", error);
@@ -70,6 +72,7 @@ const getInitialState = (): RoomState => {
     textUpdate: null,
     commentsUpdated: false,
     llmIsAvailable: true,
+    editorTheme: "vs-dark",
   };
 };
 
@@ -166,6 +169,9 @@ const roomSlice = createSlice({
       if (state.llmIsAvailable !== action.payload)
         state.llmIsAvailable = action.payload;
     },
+    setEditorTheme: (state, action: PayloadAction<"light" | "vs-dark">) => {
+      state.editorTheme = action.payload;
+    },
   },
 });
 
@@ -187,6 +193,7 @@ export const {
   setVersionChange,
   setCommentsUpdated,
   setLlmIsAvailable,
+  setEditorTheme,
 } = roomSlice.actions;
 
 export default roomSlice.reducer;
