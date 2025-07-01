@@ -30,6 +30,7 @@ services:
       SOCKETIO_PROTOCOL: wss
       LLM_KEY: ${LLM_KEY:-no-key}
       SPRING_KAFKA_BOOTSTRAP-SERVERS: kafka:29092
+      HOST_FRONTEND: notbadcode.com
     depends_on:
       postgres:
         condition: service_healthy
