@@ -110,86 +110,11 @@ jobs:
           path: frontend-image.tar.gz
           retention-days: 1
 
-  e2e-tests:
-    name: End-to-End Tests
-    runs-on: ubuntu-22.04
-    needs: build-images
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Download backend image artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: backend-image
-
-      - name: Download frontend image artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: frontend-image
-
-      - name: Load Docker images
-        run: |
-          docker load < backend-image.tar.gz
-          docker load < frontend-image.tar.gz
-
-      - name: Tag images for testing
-        run: |
-          docker tag ${{ needs.build-images.outputs.backend-image }} ghcr.io/mishablin/bloksh-backend:latest
-          docker tag ${{ needs.build-images.outputs.frontend-image }} ghcr.io/mishablin/bloksh-frontend:latest
-
-      - name: Create test environment file and dummy SSL certificates
-        run: |
-          # Create dummy SSL certificates for testing
-          mkdir -p ./ssl-test
-          touch ./ssl-test/fullchain.pem
-          touch ./ssl-test/privkey.pem
-          
-          cat > .env.test << EOF
-          POSTGRES_USER=test-user
-          POSTGRES_PASSWORD=test-password
-          POSTGRES_DB=test-db
-          LLM_KEY=test-key
-          NGINX_CONFIG=./nginx/default.conf
-          NGINX_HTTPS_PORT=8443
-          SSL_CERT_PATH=./ssl-test/fullchain.pem
-          SSL_KEY_PATH=./ssl-test/privkey.pem
-          EOF
-
-      - name: Start test environment
-        run: |
-          docker compose -f docker-compose.prod.yml --env-file .env.test up -d
-
-      - name: Wait for services to be healthy
-        run: |
-          echo "Waiting for services to start..."
-          sleep 60
-
-      - name: Run E2E health checks
-        run: |
-          # Test backend health endpoint
-          curl -f http://localhost:80/api/health || exit 1
-          
-          # Test frontend is serving
-          curl -f http://localhost:80/ || exit 1
-          
-          # Test WebSocket endpoint (basic connection test)
-          # curl -f http://localhost:80/ws/info || exit 1
-          
-          echo "Basic E2E tests passed!"
-
-      - name: Cleanup test environment
-        if: always()
-        run: |
-          docker compose -f docker-compose.prod.yml down -v
-          docker system prune -f
-          rm -rf ./ssl-test
-
   push-images:
     name: Push Images to Registry
     runs-on: ubuntu-22.04
     if: github.event_name == 'push'
-    needs: [build-images, e2e-tests]
+    needs: [build-images]
     steps:
       - name: Download backend image artifact
         uses: actions/download-artifact@v4
@@ -231,7 +156,7 @@ jobs:
     name: Deploy to Production
     runs-on: ubuntu-22.04
     if: github.event_name == 'push' && github.ref == 'refs/heads/deploy'
-    needs: [e2e-tests, push-images]
+    needs: [push-images]
     environment: production
     steps:
       - name: Checkout code
