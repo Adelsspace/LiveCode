@@ -70,8 +70,6 @@ services:
   code-frontend:
     image: ghcr.io/mishablin/bloksh-frontend:latest
     restart: unless-stopped
-    depends_on:
-      - code-backend
     networks:
       - internal
 
