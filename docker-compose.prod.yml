@@ -19,8 +19,33 @@ services:
     networks:
       - internal
 
-  code-backend:
+  code-backend-1:
     image: ghcr.io/mishablin/bloksh-backend:latest
+    restart: unless-stopped
+    container_name: bloksh-backend-1
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
+      SOCKETIO_PROTOCOL: wss
+      LLM_KEY: ${LLM_KEY:-no-key}
+      SPRING_KAFKA_BOOTSTRAP-SERVERS: kafka:29092
+      HOST_FRONTEND: notbadcode.com
+      SOCKETIO_PORT: 9092
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      init-kafka:
+        condition: service_completed_successfully
+    networks:
+      - internal
+
+  code-backend-2:
+    image: ghcr.io/mishablin/bloksh-backend:latest
+    container_name: bloksh-backend-2
     restart: unless-stopped
     environment:
       SPRING_PROFILES_ACTIVE: prod
@@ -31,6 +56,7 @@ services:
       LLM_KEY: ${LLM_KEY:-no-key}
       SPRING_KAFKA_BOOTSTRAP-SERVERS: kafka:29092
       HOST_FRONTEND: notbadcode.com
+      SOCKETIO_PORT: 9093
     depends_on:
       postgres:
         condition: service_healthy
@@ -60,7 +86,8 @@ services:
       - ${SSL_CERT_PATH:-/etc/letsencrypt/live/notbadcode.com/fullchain.pem}:/etc/letsencrypt/live/notbadcode.com/fullchain.pem:ro
       - ${SSL_KEY_PATH:-/etc/letsencrypt/live/notbadcode.com/privkey.pem}:/etc/letsencrypt/live/notbadcode.com/privkey.pem:ro
     depends_on:
-      - code-backend
+      - code-backend-1
+      - code-backend-2
       - code-frontend
     networks:
       - internal
