@@ -6,6 +6,8 @@
 
 > Код можно посмотреть в папке frontend
 
+live demo http://notbadcode.com/
+
 ## Стек технологий на фронте
 
 - **React 19 + TypeScript**
